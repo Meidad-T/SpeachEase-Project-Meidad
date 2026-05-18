@@ -6,6 +6,10 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		536BDE14E2AE3FE943C5642A /* Lottie in Frameworks */ = {isa = PBXBuildFile; productRef = 26D0A54D960E9E5D3CF138C1 /* Lottie */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		10BC62EB2FBA91DE004784BC /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -32,16 +36,22 @@
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		10BC62DF2FBA91DD004784BC /* SpeachEase-Project-Meidad */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+			);
 			path = "SpeachEase-Project-Meidad";
 			sourceTree = "<group>";
 		};
 		10BC62ED2FBA91DE004784BC /* SpeachEase-Project-MeidadTests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+			);
 			path = "SpeachEase-Project-MeidadTests";
 			sourceTree = "<group>";
 		};
 		10BC62F72FBA91DE004784BC /* SpeachEase-Project-MeidadUITests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+			);
 			path = "SpeachEase-Project-MeidadUITests";
 			sourceTree = "<group>";
 		};
@@ -52,6 +62,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				536BDE14E2AE3FE943C5642A /* Lottie in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -112,6 +123,7 @@
 			);
 			name = "SpeachEase-Project-Meidad";
 			packageProductDependencies = (
+				26D0A54D960E9E5D3CF138C1 /* Lottie */,
 			);
 			productName = "SpeachEase-Project-Meidad";
 			productReference = 10BC62DD2FBA91DD004784BC /* SpeachEase-Project-Meidad.app */;
@@ -134,8 +146,6 @@
 				10BC62ED2FBA91DE004784BC /* SpeachEase-Project-MeidadTests */,
 			);
 			name = "SpeachEase-Project-MeidadTests";
-			packageProductDependencies = (
-			);
 			productName = "SpeachEase-Project-MeidadTests";
 			productReference = 10BC62EA2FBA91DE004784BC /* SpeachEase-Project-MeidadTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
@@ -157,8 +167,6 @@
 				10BC62F72FBA91DE004784BC /* SpeachEase-Project-MeidadUITests */,
 			);
 			name = "SpeachEase-Project-MeidadUITests";
-			packageProductDependencies = (
-			);
 			productName = "SpeachEase-Project-MeidadUITests";
 			productReference = 10BC62F42FBA91DE004784BC /* SpeachEase-Project-MeidadUITests.xctest */;
 			productType = "com.apple.product-type.bundle.ui-testing";
@@ -195,6 +203,9 @@
 			);
 			mainGroup = 10BC62D42FBA91DD004784BC;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				E66F4FB578FA32EA018312CB /* XCRemoteSwiftPackageReference "lottie-spm" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 10BC62DE2FBA91DD004784BC /* Products */;
 			projectDirPath = "";
@@ -326,8 +337,11 @@
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = iphoneos;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Debug;
 		};
@@ -381,7 +395,10 @@
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
+				SDKROOT = iphoneos;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SWIFT_COMPILATION_MODE = wholemodule;
+				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Release;
 		};
@@ -416,15 +433,15 @@
 				PRODUCT_BUNDLE_IDENTIFIER = "Magic.SpeachEase-Project-Meidad";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;
-				SDKROOT = auto;
+				SDKROOT = iphoneos;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
-				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx xros xrsimulator";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2,7";
+				TARGETED_DEVICE_FAMILY = "1,2";
 				XROS_DEPLOYMENT_TARGET = 26.4;
 			};
 			name = Debug;
@@ -460,15 +477,15 @@
 				PRODUCT_BUNDLE_IDENTIFIER = "Magic.SpeachEase-Project-Meidad";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;
-				SDKROOT = auto;
+				SDKROOT = iphoneos;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
-				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx xros xrsimulator";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2,7";
+				TARGETED_DEVICE_FAMILY = "1,2";
 				XROS_DEPLOYMENT_TARGET = 26.4;
 			};
 			name = Release;
@@ -486,14 +503,14 @@
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = "Magic.SpeachEase-Project-MeidadTests";
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				SDKROOT = auto;
+				SDKROOT = iphoneos;
 				STRING_CATALOG_GENERATE_SYMBOLS = NO;
-				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx xros xrsimulator";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2,7";
+				TARGETED_DEVICE_FAMILY = "1,2";
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/SpeachEase-Project-Meidad.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/SpeachEase-Project-Meidad";
 				XROS_DEPLOYMENT_TARGET = 26.4;
 			};
@@ -512,14 +529,14 @@
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = "Magic.SpeachEase-Project-MeidadTests";
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				SDKROOT = auto;
+				SDKROOT = iphoneos;
 				STRING_CATALOG_GENERATE_SYMBOLS = NO;
-				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx xros xrsimulator";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2,7";
+				TARGETED_DEVICE_FAMILY = "1,2";
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/SpeachEase-Project-Meidad.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/SpeachEase-Project-Meidad";
 				XROS_DEPLOYMENT_TARGET = 26.4;
 			};
@@ -537,14 +554,14 @@
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = "Magic.SpeachEase-Project-MeidadUITests";
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				SDKROOT = auto;
+				SDKROOT = iphoneos;
 				STRING_CATALOG_GENERATE_SYMBOLS = NO;
-				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx xros xrsimulator";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2,7";
+				TARGETED_DEVICE_FAMILY = "1,2";
 				TEST_TARGET_NAME = "SpeachEase-Project-Meidad";
 				XROS_DEPLOYMENT_TARGET = 26.4;
 			};
@@ -562,14 +579,14 @@
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = "Magic.SpeachEase-Project-MeidadUITests";
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				SDKROOT = auto;
+				SDKROOT = iphoneos;
 				STRING_CATALOG_GENERATE_SYMBOLS = NO;
-				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx xros xrsimulator";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2,7";
+				TARGETED_DEVICE_FAMILY = "1,2";
 				TEST_TARGET_NAME = "SpeachEase-Project-Meidad";
 				XROS_DEPLOYMENT_TARGET = 26.4;
 			};
@@ -615,6 +632,25 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		E66F4FB578FA32EA018312CB /* XCRemoteSwiftPackageReference "lottie-spm" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/airbnb/lottie-spm.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 4.4.3;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		26D0A54D960E9E5D3CF138C1 /* Lottie */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = E66F4FB578FA32EA018312CB /* XCRemoteSwiftPackageReference "lottie-spm" */;
+			productName = Lottie;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 10BC62D52FBA91DD004784BC /* Project object */;
 }
