@@ -1,0 +1,31 @@
+import SwiftUI
+
+// MARK: - Analyzing Overlay (Inspired by DreamAnalysis)
+struct AnalyzingOverlayView: View {
+    let statusText: String // "Reading...", "Analyzing..."
+    
+    var body: some View {
+        ZStack {
+            // Semi-transparent background
+            Color.black.opacity(0.6)
+                .ignoresSafeArea()
+            
+            // The "Analyzing..." container
+            VStack(spacing: 20) {
+                ProgressView()
+                    .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                    .scaleEffect(1.5)
+                
+                Text(statusText)
+                    .font(.headline)
+                    .foregroundStyle(.white)
+            }
+            .padding(40)
+            .background(.ultraThinMaterial) // Using system material directly
+            .cornerRadius(20)
+            .shadow(radius: 10)
+        }
+        .transition(.opacity) // Smooth fade in/out
+        .environment(\.colorScheme, .dark) // Force dark mode for clarity
+    }
+}
