@@ -80,3 +80,18 @@ struct FlowLayout: Layout {
         
         return rows
     }
+    
+    // Helper structures
+    private struct Row {
+        var yOffset: CGFloat
+        var height: CGFloat
+        var items: [RowItem]
+    }
+    
+    private struct RowItem {
+        let index: Int
+        let width: CGFloat
+        let height: CGFloat
+        let xOffset: CGFloat
+    }
+}
