@@ -78,3 +78,36 @@ struct MeshBackground: View {
                     // Blob 2: Vibrant Orange (was Blue)
                     Circle()
                         .fill(colorScheme == .dark ? Color(hex: "EF6C00").opacity(0.4) : Color.blue.opacity(0.2))
+                        .frame(width: geo.size.width * 0.8)
+                        .blur(radius: 60)
+                        .offset(x: animate ? 50 : -20, y: animate ? 20 : -50)
+                    
+                    // Blob 3: Peach (was Cyan)
+                    Circle()
+                        .fill(colorScheme == .dark ? Color(hex: "FFCC80").opacity(0.3) : Color.cyan.opacity(0.2))
+                        .frame(width: geo.size.width * 0.6)
+                        .blur(radius: 50)
+                        .offset(x: animate ? -20 : 100, y: animate ? 100 : -20)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            }
+        }
+        .ignoresSafeArea()
+        .onAppear {
+            withAnimation(.easeInOut(duration: 7).repeatForever(autoreverses: true)) {
+                animate.toggle()
+            }
+        }
+    }
+}
+
+// MARK: - Activity Ring
+struct ActivityRing: View {
+    var progress: Double // 0.0 to 1.0
+    var color: Color = .blue
+    
+    var body: some View {
+        ZStack {
+            // Background Circle
+            Circle()
+                .stroke(color.opacity(0.2), lineWidth: 20)
