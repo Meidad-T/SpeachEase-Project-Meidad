@@ -13,3 +13,33 @@ struct LottieView: UIViewRepresentable {
         let animationView = LottieAnimationView()
         
         
+        animationView.contentMode = .scaleAspectFit
+        animationView.loopMode = loopMode
+        animationView.animationSpeed = speed
+        animationView.backgroundBehavior = .pauseAndRestore
+        
+        animationView.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(animationView)
+        
+        NSLayoutConstraint.activate([
+            animationView.heightAnchor.constraint(equalTo: view.heightAnchor),
+            animationView.widthAnchor.constraint(equalTo: view.widthAnchor)
+        ])
+        
+        // Async Load for DotLottie support
+        Task {
+            do {
+                // Attempt to load .lottie file
+                let dotLottie = try await DotLottieFile.named(filename)
+                
+                await MainActor.run {
+                    // Remove the placeholder view
+                    animationView.removeFromSuperview()
+                    
+                    // Create new view with DotLottie support
+                    let newAnimationView = LottieAnimationView(dotLottie: dotLottie)
+                    newAnimationView.contentMode = .scaleAspectFit
+                    newAnimationView.loopMode = loopMode
+                    newAnimationView.animationSpeed = speed
+                    newAnimationView.backgroundBehavior = .pauseAndRestore
+                    newAnimationView.translatesAutoresizingMaskIntoConstraints = false
