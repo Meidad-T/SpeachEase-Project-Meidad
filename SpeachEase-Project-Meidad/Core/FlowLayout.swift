@@ -56,3 +56,27 @@ struct FlowLayout: Layout {
             // Check if we need a new line
             if currentX + size.width > maxWidth && !currentRow.items.isEmpty {
                 // Finish current row
+                rows.append(currentRow)
+                
+                // Start new row
+                let nextY = currentRow.yOffset + currentRow.height + lineSpacing
+                currentRow = Row(yOffset: nextY, height: 0, items: [])
+                currentX = 0
+            }
+            
+            // Add item to current row
+            let item = RowItem(index: index, width: size.width, height: size.height, xOffset: currentX)
+            currentRow.items.append(item)
+            
+            // Update row stats
+            currentRow.height = max(currentRow.height, size.height)
+            currentX += size.width + spacing
+        }
+        
+        // Append the last row
+        if !currentRow.items.isEmpty {
+            rows.append(currentRow)
+        }
+        
+        return rows
+    }
