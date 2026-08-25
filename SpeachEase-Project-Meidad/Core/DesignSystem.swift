@@ -111,3 +111,24 @@ struct ActivityRing: View {
             // Background Circle
             Circle()
                 .stroke(color.opacity(0.2), lineWidth: 20)
+            
+            // Progress Circle
+            Circle()
+                .trim(from: 0, to: progress)
+                .stroke(
+                    AngularGradient(
+                        gradient: Gradient(colors: [color.opacity(0.5), color]),
+                        center: .center,
+                        startAngle: .degrees(0),
+                        endAngle: .degrees(360)
+                    ),
+                    style: StrokeStyle(lineWidth: 20, lineCap: .round)
+                )
+                .rotationEffect(.degrees(-90))
+                .shadow(color: color.opacity(0.5), radius: 10, x: 0, y: 0)
+        }
+    }
+}
+
+// Helper removed (using UserProfileManager extension)
+
