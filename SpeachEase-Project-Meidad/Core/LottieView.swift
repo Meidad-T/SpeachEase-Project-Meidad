@@ -43,3 +43,21 @@ struct LottieView: UIViewRepresentable {
                     newAnimationView.animationSpeed = speed
                     newAnimationView.backgroundBehavior = .pauseAndRestore
                     newAnimationView.translatesAutoresizingMaskIntoConstraints = false
+                    
+                    view.addSubview(newAnimationView)
+                    
+                    NSLayoutConstraint.activate([
+                        newAnimationView.heightAnchor.constraint(equalTo: view.heightAnchor),
+                        newAnimationView.widthAnchor.constraint(equalTo: view.widthAnchor)
+                    ])
+                    
+                    newAnimationView.play()
+                }
+            } catch {
+                // Fallback to standard .json Lottie on the existing view
+                await MainActor.run {
+                    if let animation = LottieAnimation.named(filename) {
+                        animationView.animation = animation
+                        animationView.play()
+                    } else {
+                        print("LottieView: Could not load animation '\(filename)' (neither .lottie nor .json found).")
