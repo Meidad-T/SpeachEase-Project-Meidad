@@ -61,3 +61,15 @@ struct LottieView: UIViewRepresentable {
                         animationView.play()
                     } else {
                         print("LottieView: Could not load animation '\(filename)' (neither .lottie nor .json found).")
+                    }
+                }
+            }
+        }
+        
+        return view
+    }
+    
+    func updateUIView(_ uiView: UIViewType, context: Context) {
+        // No updates needed for now
+    }
+}
