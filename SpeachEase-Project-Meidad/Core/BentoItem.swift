@@ -45,3 +45,23 @@ struct BentoItem: View {
             Spacer()
             
             Text(title)
+                .font(isiPad ? .title : .title3)
+                .fontWeight(.bold)
+                .foregroundStyle(.white)
+                .lineLimit(2)
+            
+            Text(subtitle)
+                .font(isiPad ? .headline : .caption)
+                .fontWeight(.medium)
+                .foregroundStyle(.white.opacity(0.8))
+                .lineLimit(1)
+        }
+        .padding(isiPad ? 24 : 16)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+        // Fixed heights based on desired grid look
+        .frame(height: isiPad ? 240 : 160) 
+        .background(
+            LinearGradient(
+                colors: [color.opacity(0.9), color],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
