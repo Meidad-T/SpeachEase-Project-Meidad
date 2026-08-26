@@ -147,3 +147,30 @@ struct RecordingAmbientBackground: View {
                 ZStack {
                     // Blob 1: Primary Warmth
                     Circle()
+                        .fill(colorScheme == .dark ? 
+                              Color(hex: "E65100").opacity(0.3) : // Dark Orange (Subtle)
+                              Color(hex: "FFB74D").opacity(0.4))  // Light Orange
+                        .frame(width: geo.size.width * 1.5)
+                        .position(x: animate ? geo.size.width * 0.8 : geo.size.width * 0.2,
+                                  y: animate ? geo.size.height * 0.2 : geo.size.height * 0.8)
+                        .blur(radius: 120)
+                    
+                    // Blob 2: Secondary Accent
+                    Circle()
+                        .fill(colorScheme == .dark ? 
+                              Color(hex: "BF360C").opacity(0.2) : // Deep Red/Brown (Subtle)
+                              Color(hex: "FFCC80").opacity(0.3))  // Peach
+                        .frame(width: geo.size.width * 1.2)
+                        .position(x: animate ? geo.size.width * 0.1 : geo.size.width * 0.9,
+                                  y: animate ? geo.size.height * 0.8 : geo.size.height * 0.2)
+                        .blur(radius: 100)
+                }
+            }
+            .onAppear {
+                withAnimation(.easeInOut(duration: 8.0).repeatForever(autoreverses: true)) {
+                    animate = true
+                }
+            }
+        }
+    }
+}
