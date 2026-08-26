@@ -103,3 +103,47 @@ struct AnalysisGradientOverlay: View {
                         .frame(width: geo.size.width * 1.2, height: geo.size.width * 1.2)
                         .position(x: animate ? geo.size.width * 0.9 : geo.size.width * 0.1,
                                   y: animate ? geo.size.height * 0.8 : geo.size.height * 0.1)
+                        .blur(radius: 60)
+                    
+                    // Blob 3: Vibrant Orange
+                    Circle()
+                        .fill(Color(hex: "F57C00").opacity(0.7))
+                        .frame(width: geo.size.width, height: geo.size.width)
+                        .position(x: animate ? geo.size.width * 0.1 : geo.size.width * 0.5,
+                                  y: animate ? geo.size.height * 0.5 : geo.size.height * 0.9)
+                        .blur(radius: 50)
+                }
+            }
+            .onAppear {
+                withAnimation(.easeInOut(duration: 4.0).repeatForever(autoreverses: true)) {
+                    animate = true
+                }
+            }
+            
+            // Grain Texture (White Noise)
+            GrainOverlay()
+                .opacity(0.15)
+                .blendMode(.overlay)
+        }
+        .drawingGroup() // Optimize rendering
+    }
+}
+
+// MARK: - Recording Ambient Background (Slow, Fluid, Theme-Aware)
+struct RecordingAmbientBackground: View {
+    @Environment(\.colorScheme) var colorScheme
+    @State private var animate = false
+    
+    var body: some View {
+        ZStack {
+            // Base Background: Use system background directly
+            // Dark Mode: Black (standard)
+            // Light Mode: White (standard)
+            // But we will overlay subtle colors
+            (colorScheme == .dark ? Color.black : Color(hex: "FFF3E0")) // Dark or Very Light Orange/White
+                .ignoresSafeArea()
+            
+            GeometryReader { geo in
+                ZStack {
+                    // Blob 1: Primary Warmth
+                    Circle()
