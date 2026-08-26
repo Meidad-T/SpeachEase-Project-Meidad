@@ -33,3 +33,73 @@ struct GrainOverlay: View {
                   decode: nil,
                   shouldInterpolate: false,
                   intent: .defaultIntent
+              ) else {
+            return UIImage()
+        }
+        
+        return UIImage(cgImage: cgImage)
+    }
+}
+
+// MARK: - Animated Processing Text
+struct AnimatedProcessingText: View {
+    let text: String
+    @State private var dotCount = 0
+    let timer = Timer.publish(every: 0.5, on: .main, in: .common).autoconnect()
+    
+    // Clean text by removing any trailing dots
+    var cleanText: String {
+        var t = text
+        while t.hasSuffix(".") {
+            t.removeLast()
+        }
+        return t
+    }
+    
+    var body: some View {
+        HStack(spacing: 0) {
+            Text(cleanText)
+                .font(.title2)
+                .fontWeight(.bold)
+                .foregroundStyle(.white)
+            
+            Text(String(repeating: ".", count: dotCount))
+                .font(.title2)
+                .fontWeight(.bold)
+                .foregroundStyle(.white)
+                .frame(width: 24, alignment: .leading) // Fixed width for 3 dots
+        }
+        .onReceive(timer) { _ in
+            withAnimation {
+                dotCount = (dotCount + 1) % 4
+            }
+        }
+    }
+}
+
+// MARK: - Animated Gradient Overlay
+struct AnalysisGradientOverlay: View {
+    @State private var animate = false
+    
+    var body: some View {
+        ZStack {
+            // Background Warmth (Peach)
+            Color(hex: "FFCC80")
+            
+            // Moving Blobs
+            GeometryReader { geo in
+                ZStack {
+                    // Blob 1: Dark Orange (was Yellow)
+                    Circle()
+                        .fill(Color(hex: "E65100").opacity(0.8))
+                        .frame(width: geo.size.width * 1.5, height: geo.size.width * 1.5)
+                        .position(x: animate ? geo.size.width * 0.2 : geo.size.width * 0.8,
+                                  y: animate ? geo.size.height * 0.2 : geo.size.height * 0.8)
+                        .blur(radius: 80)
+                    
+                    // Blob 2: Deep Red/Orange
+                    Circle()
+                        .fill(Color(hex: "BF360C").opacity(0.6))
+                        .frame(width: geo.size.width * 1.2, height: geo.size.width * 1.2)
+                        .position(x: animate ? geo.size.width * 0.9 : geo.size.width * 0.1,
+                                  y: animate ? geo.size.height * 0.8 : geo.size.height * 0.1)
