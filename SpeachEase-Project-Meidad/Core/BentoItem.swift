@@ -65,3 +65,15 @@ struct BentoItem: View {
                 colors: [color.opacity(0.9), color],
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing
+            )
+        )
+        .clipShape(RoundedRectangle(cornerRadius: isiPad ? 32 : 24))
+        .shadow(color: color.opacity(0.3), radius: isiPad ? 12 : 8, x: 0, y: isiPad ? 6 : 4)
+
+        
+        // Ensure the entire area is hoverable
+        .contentShape(RoundedRectangle(cornerRadius: isiPad ? 32 : 24)) 
+
+
+    }
+}
