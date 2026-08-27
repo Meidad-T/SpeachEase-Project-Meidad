@@ -263,3 +263,50 @@ struct PracticeSession: Identifiable, Codable {
     // Legacy initializer
     init(name: String, focus: PracticeFocus, timeLimitMinutes: Int?, enforceTimeLimit: Bool, customColor: SavedColor?) {
         self.init(name: name, foci: [focus], timeLimitMinutes: timeLimitMinutes, enforceTimeLimit: enforceTimeLimit, customColor: customColor)
+    }
+    
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(UUID.self, forKey: .id)
+        name = try container.decode(String.self, forKey: .name)
+        timeLimitMinutes = try container.decodeIfPresent(Int.self, forKey: .timeLimitMinutes)
+        enforceTimeLimit = try container.decode(Bool.self, forKey: .enforceTimeLimit)
+        customColor = try container.decodeIfPresent(SavedColor.self, forKey: .customColor)
+        createdDate = try container.decodeIfPresent(Date.self, forKey: .createdDate)
+        
+        recordingFileName = try container.decodeIfPresent(String.self, forKey: .recordingFileName)
+        speechReport = try container.decodeIfPresent(SpeechReport.self, forKey: .speechReport)
+        
+        practiceLog = try container.decodeIfPresent([Date].self, forKey: .practiceLog) ?? []
+        history = try container.decodeIfPresent([PracticeAttempt].self, forKey: .history) ?? []
+        
+        // Try decoding new array first
+        if let newFoci = try? container.decode([PracticeFocus].self, forKey: .foci) {
+            foci = newFoci
+        } else if let oldFocus = try? container.decode(PracticeFocus.self, forKey: .focus) {
+            // Fallback to old single focus
+            foci = [oldFocus]
+        } else {
+            foci = [.vocal] // Default
+        }
+    }
+    
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(id, forKey: .id)
+        try container.encode(name, forKey: .name)
+        try container.encode(foci, forKey: .foci)
+        // Back-compat: write first focus to old key
+        if let first = foci.first {
+             try container.encode(first, forKey: .focus)
+        }
+        try container.encode(timeLimitMinutes, forKey: .timeLimitMinutes)
+        try container.encode(enforceTimeLimit, forKey: .enforceTimeLimit)
+        try container.encode(customColor, forKey: .customColor)
+        try container.encode(createdDate, forKey: .createdDate)
+        try container.encode(recordingFileName, forKey: .recordingFileName)
+        try container.encode(speechReport, forKey: .speechReport)
+        try container.encode(practiceLog, forKey: .practiceLog)
+        try container.encode(history, forKey: .history)
+    }
+}
