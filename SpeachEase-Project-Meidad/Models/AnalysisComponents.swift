@@ -660,3 +660,279 @@ struct ProgressTrendGraph: View {
                                     .shadow(color: .black.opacity(0.1), radius: 4)
                                     // Apply offset directly to position X
                                     .position(x: x + tooltipOffset(index: index, count: dataPoints.count), y: y - 55)
+                                    .transition(.scale)
+                                    .fixedSize()
+                                    .zIndex(100)
+                                    .onTapGesture {
+                                        // Eat tap so it doesn't dismiss when tapping the tooltip itself
+                                        selectedPointID = point.id 
+                                    }
+                                }
+                            }
+                            
+                            // D. X-Axis Labels
+                            ForEach(Array(dataPoints.enumerated()), id: \.element.id) { index, point in
+                                if shouldShowLabel(index: index, count: dataPoints.count) {
+                                    let x = getX(index: index, width: chartWidth, count: dataPoints.count)
+                                    let delay = animDuration * (Double(index) / Double(max(dataPoints.count - 1, 1)))
+                                    
+                                    Text(dateString(point.date))
+                                        .font(.caption2)
+                                        .foregroundStyle(.secondary)
+                                        .position(x: x, y: chartHeight + 15)
+                                        .opacity(showDots ? 1 : 0)
+                                        .animation(.easeOut.delay(delay), value: showDots)
+                                }
+                            }
+                        }
+                        .padding(.leading, 10)
+                        .padding(.top, 10)
+                    }
+                }
+            }
+
+            .frame(height: 250)
+            .padding(.horizontal)
+        }
+        .onAppear {
+            // Reset to 0 first if view recycles, though in this flow it's usually fresh.
+            animationProgress = 0
+            showDots = false
+            
+            // Linear animation for the path drawing to match calculated delays
+            withAnimation(.linear(duration: animDuration)) {
+                animationProgress = 1.0
+            }
+            
+            // Trigger dots (animations handled by individual delays)
+            showDots = true
+        }
+    }
+    
+    // MARK: - Components & Helpers
+    
+    // Helper to shift tooltip if near edges
+    func tooltipOffset(index: Int, count: Int) -> CGFloat {
+        if count < 4 { return 0 } // No shift if few items
+        if index == 0 { return 40 }
+        if index == 1 { return 20 }
+        if index == count - 1 { return -40 }
+        if index == count - 2 { return -20 }
+        return 0
+    }
+    
+    func GridBackground(width: CGFloat, height: CGFloat) -> some View {
+        ZStack(alignment: .topLeading) {
+            ForEach(0...4, id: \.self) { i in
+                let y = height * (CGFloat(i) / 4.0)
+                let value = 100 - (i * 25)
+                
+                Path { path in
+                    path.move(to: CGPoint(x: 0, y: y))
+                    path.addLine(to: CGPoint(x: width, y: y))
+                }
+                .stroke(Color.secondary.opacity(0.2), style: StrokeStyle(lineWidth: 1, dash: [4]))
+                
+                Text("\(value)")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                    .position(x: width + 20, y: y)
+            }
+        }
+    }
+    
+    // Generic Path Generator with Smoothing (Cubic Bezier)
+    func GraphPath(width: CGFloat, height: CGFloat, keyPath: KeyPath<PracticeAttempt, Int?>) -> Path {
+        var path = Path()
+        guard dataPoints.count > 1 else { return path }
+        
+        // Filter valid points
+        let validPoints: [(point: CGPoint, index: Int)] = dataPoints.enumerated().compactMap { index, item in
+            guard let value = item[keyPath: keyPath] else { return nil }
+            let x = getX(index: index, width: width, count: dataPoints.count)
+            let y = getY(score: value, height: height)
+            return (CGPoint(x: x, y: y), index)
+        }
+        
+        guard validPoints.count > 1 else { return path }
+        
+        path.move(to: validPoints[0].point)
+        
+        for i in 1..<validPoints.count {
+            let current = validPoints[i].point
+            let previous = validPoints[i-1].point
+            
+            // simple smoothing: control points at 50% X between points
+            let control1 = CGPoint(x: previous.x + (current.x - previous.x) / 2, y: previous.y)
+            let control2 = CGPoint(x: previous.x + (current.x - previous.x) / 2, y: current.y)
+            
+            path.addCurve(to: current, control1: control1, control2: control2)
+        }
+        
+        return path
+    }
+    
+    // Smooth Path Overload for non-optional (Score)
+    func GraphPath(width: CGFloat, height: CGFloat, keyPath: KeyPath<PracticeAttempt, Int>) -> Path {
+        var path = Path()
+        guard dataPoints.count > 1 else { return path }
+        
+        let p0 = dataPoints[0]
+        let startPoint = CGPoint(x: getX(index: 0, width: width, count: dataPoints.count),
+                                 y: getY(score: p0[keyPath: keyPath], height: height))
+        
+        path.move(to: startPoint)
+        
+        for index in 1..<dataPoints.count {
+            let currentAttempt = dataPoints[index]
+            let prevAttempt = dataPoints[index-1]
+            
+            let currentPoint = CGPoint(x: getX(index: index, width: width, count: dataPoints.count),
+                                       y: getY(score: currentAttempt[keyPath: keyPath], height: height))
+            
+            let prevPoint = CGPoint(x: getX(index: index-1, width: width, count: dataPoints.count),
+                                    y: getY(score: prevAttempt[keyPath: keyPath], height: height))
+            
+            // Smoothing Logic
+            let control1 = CGPoint(x: prevPoint.x + (currentPoint.x - prevPoint.x) / 2, y: prevPoint.y)
+            let control2 = CGPoint(x: prevPoint.x + (currentPoint.x - prevPoint.x) / 2, y: currentPoint.y)
+            
+            path.addCurve(to: currentPoint, control1: control1, control2: control2)
+        }
+        return path
+    }
+    
+    func ScoreLabel(score: Int, color: Color) -> some View {
+        Text("\(score)")
+            .font(.caption2)
+            .fontWeight(.bold)
+            .foregroundStyle(color)
+            .padding(.horizontal, 6)
+            .padding(.vertical, 2)
+            .background(.thinMaterial, in: Capsule())
+            .overlay(Capsule().stroke(color.opacity(0.5), lineWidth: 1))
+    }
+    
+    func getX(index: Int, width: CGFloat, count: Int) -> CGFloat {
+        guard count > 1 else { return width / 2 }
+        let step = width / CGFloat(count - 1)
+        return CGFloat(index) * step
+    }
+    
+    func getY(score: Int, height: CGFloat) -> CGFloat {
+        let normalized = 1.0 - (CGFloat(score) / 100.0)
+        return normalized * height
+    }
+    
+    func dateString(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "M/d"
+        return formatter.string(from: date)
+    }
+    
+    func shouldShowLabel(index: Int, count: Int) -> Bool {
+        if count <= 5 { return true }
+        let step = Int(ceil(Double(count) / 5.0))
+        return index % step == 0
+    }
+}
+
+// MARK: - 7. Confidence Rater
+struct ConfidenceRater: View {
+    @Binding var score: Int
+    @State private var isDragging: Bool = false
+    
+    // More granular emoji range (10 steps)
+    var currentEmoji: String {
+        let index = min(max(score / 10, 0), 9)
+        let emojis = ["😖", "😣", "😟", "😕", "😐", "😌", "🙂", "😊", "😄", "😎"]
+        return emojis[index]
+    }
+    
+    var label: String {
+        switch score {
+        case 0..<20: return "Scared"
+        case 20..<40: return "Unsure"
+        case 40..<60: return "Okay"
+        case 60..<80: return "Good"
+        case 80...100: return "Confident!"
+        default: return "Neutral"
+        }
+    }
+    
+    var body: some View {
+        VStack(spacing: 8) {
+            // Label Header
+            HStack {
+                Text("Rate your confidence:")
+                    .font(.caption)
+                    .fontWeight(.medium)
+                    .foregroundStyle(.secondary)
+                
+                Spacer()
+                
+                Text("\(score)")
+                    .font(.caption)
+                    .fontWeight(.bold)
+                    .foregroundStyle(.orange)
+                    .contentTransition(.numericText())
+                
+                Text(label)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            .padding(.horizontal, 4)
+            
+            // Cute Compact Slider
+            GeometryReader { geo in
+                let width = geo.size.width
+                let thumbSize: CGFloat = 48 // Increased from 36
+                let trackHeight: CGFloat = 6
+                let availableWidth = width - thumbSize
+                let xOffset = CGFloat(score) / 100.0 * availableWidth
+                
+                ZStack(alignment: .leading) {
+                    // Track Background
+                    Capsule()
+                        .fill(Color.secondary.opacity(0.1))
+                        .frame(height: trackHeight)
+                    
+                    // Active Track Gradient
+                    Capsule()
+                        .fill(LinearGradient(
+                            colors: [.red.opacity(0.6), .orange, .green],
+                            startPoint: .leading,
+                            endPoint: .trailing
+                        ))
+                        .frame(width: xOffset + (thumbSize / 2), height: trackHeight)
+                    
+                    // Emoji Thumb
+                    ZStack {
+                        Circle()
+                            .fill(Color(UIColor.systemBackground))
+                            .shadow(color: .black.opacity(0.15), radius: 3, x: 0, y: 2)
+                        
+                        Text(currentEmoji)
+                            .font(.system(size: 32)) // Increased from 22
+                            .scaleEffect(isDragging ? 1.3 : 1.0)
+                            .rotationEffect(.degrees(isDragging ? -10 : 0))
+                    }
+                    .frame(width: thumbSize, height: thumbSize)
+                    .offset(x: xOffset)
+                    .gesture(
+                        DragGesture()
+                            .onChanged { value in
+                                isDragging = true
+                                let locationX = value.location.x - (thumbSize / 2)
+                                let percent = locationX / availableWidth
+                                let clamped = min(max(percent, 0), 1)
+                                let newScore = Int(clamped * 100)
+                                
+                                if newScore != score {
+                                    score = newScore
+                                    let impact = UIImpactFeedbackGenerator(style: .light)
+                                    impact.impactOccurred()
+                                }
+                            }
+                            .onEnded { _ in
+                                isDragging = false
