@@ -936,3 +936,169 @@ struct ConfidenceRater: View {
                             }
                             .onEnded { _ in
                                 isDragging = false
+                                let impact = UIImpactFeedbackGenerator(style: .medium)
+                                impact.impactOccurred()
+                            }
+                    )
+                }
+                .frame(height: thumbSize)
+            }
+            .frame(height: 48) // Fixed height container for the slider (matched thumbSize)
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
+        .background(Material.ultraThin)
+        .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 20)
+                .stroke(Color.white.opacity(0.2), lineWidth: 0.5)
+        )
+    }
+}
+
+// MARK: - 8. Interactive Audio Player
+struct AudioTranscriptPlayer: View {
+    let audioUrl: URL
+    let transcription: SFTranscription
+    
+    @State private var audioPlayer: AVAudioPlayer?
+    @State private var isPlaying: Bool = false
+    @State private var currentTime: TimeInterval = 0
+    @State private var playbackTask: Task<Void, Never>?
+    @State private var totalDuration: TimeInterval = 0
+    
+    var body: some View {
+        VStack(spacing: 16) {
+            // Controls
+            HStack(spacing: 16) {
+                Button(action: togglePlayback) {
+                    Image(systemName: isPlaying ? "pause.circle.fill" : "play.circle.fill")
+                        .font(.system(size: 44))
+                        .foregroundStyle(.cyan)
+                        .shadow(color: .cyan.opacity(0.3), radius: 10)
+                }
+                .buttonStyle(.plain)
+                
+                VStack(spacing: 4) {
+                    Slider(value: Binding(
+                        get: { currentTime },
+                        set: { seek(to: $0) }
+                    ), in: 0...totalDuration)
+                    .tint(.cyan)
+                    
+                    HStack {
+                        Text(formatTime(currentTime))
+                        Spacer()
+                        Text(formatTime(totalDuration))
+                    }
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                }
+            }
+            .padding(.horizontal)
+            
+            // Interactive Transcript
+            ScrollView {
+                FlowLayout(spacing: 6) {
+                    ForEach(transcription.segments.indices, id: \.self) { index in
+                        let segment = transcription.segments[index]
+                        let isHighlighted = currentTime >= segment.timestamp && currentTime < (segment.timestamp + segment.duration)
+                        
+                        Text(segment.substring)
+                            .font(.body)
+                            .fontWeight(isHighlighted ? .bold : .regular)
+                            .foregroundStyle(isHighlighted ? .black : .primary) // High contrast for active word
+                            .padding(.horizontal, 4)
+                            .padding(.vertical, 2)
+                            .background(
+                                Capsule()
+                                    .fill(isHighlighted ? Color.cyan : Color.clear)
+                            )
+                            .onTapGesture {
+                                seek(to: segment.timestamp)
+                            }
+                            .animation(.easeInOut(duration: 0.1), value: isHighlighted)
+                    }
+                }
+                .padding()
+            }
+            .frame(height: 200) // Fixed height for scrolling
+            .background(Color(UIColor.secondarySystemBackground).opacity(0.5))
+            .cornerRadius(16)
+        }
+        .padding()
+        .background(Material.ultraThin)
+        .cornerRadius(20)
+        .onAppear(perform: setupPlayer)
+        .onDisappear(perform: stopPlayer)
+    }
+    
+    // MARK: - Audio Logic
+    
+    func setupPlayer() {
+        do {
+            audioPlayer = try AVAudioPlayer(contentsOf: audioUrl)
+            audioPlayer?.prepareToPlay()
+            totalDuration = audioPlayer?.duration ?? 0
+        } catch {
+            print("Failed to init audio player: \(error)")
+        }
+    }
+    
+    func togglePlayback() {
+        guard let player = audioPlayer else { return }
+        if player.isPlaying {
+            player.pause()
+            isPlaying = false
+            playbackTask?.cancel()
+        } else {
+            player.play()
+            isPlaying = true
+            startTimer()
+        }
+    }
+    
+    func stopPlayer() {
+        audioPlayer?.stop()
+        isPlaying = false
+        playbackTask?.cancel()
+    }
+    
+    func seek(to time: TimeInterval) {
+        audioPlayer?.currentTime = time
+        currentTime = time
+        if isPlaying {
+            audioPlayer?.play() // Ensure it keeps playing if it was playing
+        }
+    }
+    
+    func startTimer() {
+        playbackTask?.cancel()
+        playbackTask = Task { @MainActor in
+            while isPlaying {
+                if let player = audioPlayer {
+                    withAnimation(.linear(duration: 0.05)) {
+                        currentTime = player.currentTime
+                    }
+                    if !player.isPlaying {
+                        // Finished
+                        isPlaying = false
+                        currentTime = 0
+                        return
+                    }
+                }
+                try? await Task.sleep(nanoseconds: 50_000_000) // 0.05s
+            }
+        }
+    }
+    
+    func formatTime(_ time: TimeInterval) -> String {
+        let minutes = Int(time) / 60
+        let seconds = Int(time) % 60
+        return String(format: "%02d:%02d", minutes, seconds)
+    }
+}
+
+
+
+
