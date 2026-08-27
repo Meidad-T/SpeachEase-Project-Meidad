@@ -185,3 +185,81 @@ struct SavedColor: Codable {
         self.blue = Double(b)
         self.opacity = Double(a)
     }
+}
+
+// MARK: - Practice History Item
+struct PracticeAttempt: Identifiable, Codable, Hashable {
+    var id: UUID = UUID()
+    let date: Date
+    let recordingFileName: String
+    let speechReport: SpeechReport
+    var confidenceScore: Int? // Optional self-rating (0-100)
+    var sessionName: String? // Optional name for orphaned history
+    
+    // Convenience Accessors
+    var score: Int { speechReport.overallScore }
+    
+    static func == (lhs: PracticeAttempt, rhs: PracticeAttempt) -> Bool {
+        lhs.id == rhs.id
+    }
+    
+    func hash(into hasher: inout Hasher) {
+        hasher.combine(id)
+    }
+}
+
+struct PracticeSession: Identifiable, Codable {
+    var id: UUID = UUID()
+    var name: String
+    private var _focus: PracticeFocus? // Legacy support
+    var foci: [PracticeFocus] // New support
+    
+    // Computed property for backward compatibility
+    var focus: PracticeFocus {
+        get { foci.first ?? .vocal } // Default fallback if empty
+        set { foci = [newValue] }
+    }
+    
+    var timeLimitMinutes: Int? // Optional, check boolean flag for enforcement
+    var enforceTimeLimit: Bool
+    var customColor: SavedColor?
+    var createdDate: Date? = Date() // Optional for backward compatibility with existing JSON
+    
+    // Active Session State (For "New" tab)
+    var recordingFileName: String?
+    var speechReport: SpeechReport?
+    
+    // History (For "Past" tab)
+    var history: [PracticeAttempt] = []
+    var practiceLog: [Date] = [] // Legacy simple log
+    
+    // Helper to get the display color: use custom if available, else first focus default
+    var displayColor: Color {
+        if let custom = customColor {
+            return custom.color
+        }
+        return foci.first?.defaultColor ?? .blue
+    }
+    
+    // Custom coding keys to handle migration
+    enum CodingKeys: String, CodingKey {
+        case id, name, focus, foci, timeLimitMinutes, enforceTimeLimit, customColor, createdDate, recordingFileName, speechReport, practiceLog, history
+    }
+    
+    init(id: UUID = UUID(), name: String, foci: [PracticeFocus], timeLimitMinutes: Int?, enforceTimeLimit: Bool, customColor: SavedColor?, createdDate: Date? = Date(), recordingFileName: String? = nil, speechReport: SpeechReport? = nil, practiceLog: [Date] = [], history: [PracticeAttempt] = []) {
+        self.id = id
+        self.name = name
+        self.foci = foci
+        self.timeLimitMinutes = timeLimitMinutes
+        self.enforceTimeLimit = enforceTimeLimit
+        self.customColor = customColor
+        self.createdDate = createdDate
+        self.recordingFileName = recordingFileName
+        self.speechReport = speechReport
+        self.practiceLog = practiceLog
+        self.history = history
+    }
+    
+    // Legacy initializer
+    init(name: String, focus: PracticeFocus, timeLimitMinutes: Int?, enforceTimeLimit: Bool, customColor: SavedColor?) {
+        self.init(name: name, foci: [focus], timeLimitMinutes: timeLimitMinutes, enforceTimeLimit: enforceTimeLimit, customColor: customColor)
