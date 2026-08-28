@@ -24,3 +24,8 @@ struct AnalyzingOverlayView: View {
             .background(.ultraThinMaterial) // Using system material directly
             .cornerRadius(20)
             .shadow(radius: 10)
+        }
+        .transition(.opacity) // Smooth fade in/out
+        .environment(\.colorScheme, .dark) // Force dark mode for clarity
+    }
+}
