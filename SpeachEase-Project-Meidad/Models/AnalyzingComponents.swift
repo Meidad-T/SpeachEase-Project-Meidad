@@ -16,3 +16,11 @@ struct AnalyzingOverlayView: View {
                     .progressViewStyle(CircularProgressViewStyle(tint: .white))
                     .scaleEffect(1.5)
                 
+                Text(statusText)
+                    .font(.headline)
+                    .foregroundStyle(.white)
+            }
+            .padding(40)
+            .background(.ultraThinMaterial) // Using system material directly
+            .cornerRadius(20)
+            .shadow(radius: 10)
