@@ -151,3 +151,30 @@ extension Color {
         let r = Float(components[0])
         let g = Float(components[1])
         let b = Float(components[2])
+        var a = Float(1.0)
+        
+        if components.count >= 4 {
+            a = Float(components[3])
+        }
+        
+        if a != 1.0 {
+            return String(format: "%02lX%02lX%02lX%02lX", lroundf(r * 255), lroundf(g * 255), lroundf(b * 255), lroundf(a * 255))
+        } else {
+            return String(format: "%02lX%02lX%02lX", lroundf(r * 255), lroundf(g * 255), lroundf(b * 255))
+        }
+    }
+    
+    var complementary: Color {
+        let uiColor = UIColor(self)
+        var h: CGFloat = 0
+        var s: CGFloat = 0
+        var b: CGFloat = 0
+        var a: CGFloat = 0
+        
+        if uiColor.getHue(&h, saturation: &s, brightness: &b, alpha: &a) {
+            let newHue = (h + 0.5).truncatingRemainder(dividingBy: 1.0)
+            return Color(hue: newHue, saturation: s, brightness: b, opacity: a)
+        }
+        return self // Fallback if conversion fails
+    }
+}
