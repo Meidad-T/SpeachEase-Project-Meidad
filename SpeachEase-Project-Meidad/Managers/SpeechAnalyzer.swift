@@ -308,3 +308,58 @@ class SpeechAnalyzer: ObservableObject {
             if count == 0 { return 50 }
             
             let rms = sqrt(sumSquares / Float(count))
+            let volumeScore = min(Double(rms) * 500, 100)
+            return max(50, min(volumeScore + 40, 100))
+            
+        } catch {
+            print("Audio analysis failed: \(error)")
+            return 50
+        }
+    }
+    
+    // MARK: - 2. Vocabulary
+    private func calculateVocabulary(text: String) -> Double {
+        let tagger = NLTagger(tagSchemes: [.lexicalClass])
+        tagger.string = text
+        
+        var wordCount = 0.0
+        var uniqueWords = Set<String>()
+        var complexWords = 0.0
+        
+        tagger.enumerateTags(in: text.startIndex..<text.endIndex, unit: .word, scheme: .lexicalClass) { tag, range in
+            let word = String(text[range]).lowercased()
+            if tag != .punctuation && tag != .whitespace {
+                wordCount += 1
+                uniqueWords.insert(word)
+                if word.count > 6 { complexWords += 1 }
+            }
+            return true
+        }
+        
+        if wordCount == 0 { return 0 }
+        
+        let typeTokenRatio = Double(uniqueWords.count) / wordCount
+        let varietyScore = min(typeTokenRatio * 150, 100)
+        let complexityBonus = min((complexWords / wordCount) * 200, 20)
+        
+        return min(varietyScore + complexityBonus, 100)
+    }
+    
+    // MARK: - 3. Engagement (Sentiment)
+    private func calculateEngagement(text: String) -> Double {
+        let tagger = NLTagger(tagSchemes: [.sentimentScore])
+        tagger.string = text
+        let (sentiment, _) = tagger.tag(at: text.startIndex, unit: .paragraph, scheme: .sentimentScore)
+        let score = Double(sentiment?.rawValue ?? "0") ?? 0.0
+        let intensity = abs(score)
+        return min(50 + (intensity * 50 * 2), 100) 
+    }
+}
+
+extension AVAudioFile {
+    var duration: TimeInterval {
+        let sampleRate = processingFormat.sampleRate
+        guard sampleRate > 0 else { return 0 }
+        return Double(length) / sampleRate
+    }
+}
