@@ -19,3 +19,46 @@ class SpeechRecognizerManager: ObservableObject {
     init() {
         // Lazy init
     }
+    
+
+    
+    func transcribeAudioFile(url: URL) {
+        // Just-in-time authorization check for Speech Recognition (NOT Microphone)
+        let status = SFSpeechRecognizer.authorizationStatus()
+        if status == .notDetermined {
+            SFSpeechRecognizer.requestAuthorization { [weak self] authStatus in
+                DispatchQueue.main.async {
+                    if authStatus == .authorized {
+                        self?.hasPermission = true
+                        self?.performTranscription(url: url)
+                    } else {
+                        self?.errorMessage = "Speech recognition permission declined."
+                    }
+                }
+            }
+            return
+        } else if status == .denied || status == .restricted {
+            self.errorMessage = "Speech recognition permission is required to analyze the file."
+            return
+        }
+        
+        performTranscription(url: url)
+    }
+    
+    private func performTranscription(url: URL) {
+        
+        // Cancel previous task if any
+        recognitionTask?.cancel()
+        recognitionTask = nil
+        
+        // Reset state
+        self.transcript = ""
+        self.transcriptionResult = nil
+        self.isProcessing = true
+        self.errorMessage = nil
+        
+        // Init Recognizer
+        let recognizer = SFSpeechRecognizer(locale: Locale(identifier: "en-US"))
+        self.speechRecognizer = recognizer
+        
+        guard let recognizer = recognizer, recognizer.isAvailable else {
