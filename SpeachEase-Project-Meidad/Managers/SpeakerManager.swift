@@ -46,3 +46,23 @@ final class SpeakerManager: NSObject, ObservableObject {
         if let enhanced = englishVoices.first(where: { $0.quality == .enhanced }) {
             return enhanced
         }
+        
+        return englishVoices.first ?? AVSpeechSynthesisVoice(language: "en-US")
+    }
+    
+    func stop() {
+        if synthesizer.isSpeaking {
+            synthesizer.stopSpeaking(at: .immediate)
+        }
+        isSpeaking = false
+    }
+    
+    func toggle() {
+        isEnabled.toggle()
+        if !isEnabled {
+            stop()
+        }
+    }
+}
+
+extension SpeakerManager: AVSpeechSynthesizerDelegate {
