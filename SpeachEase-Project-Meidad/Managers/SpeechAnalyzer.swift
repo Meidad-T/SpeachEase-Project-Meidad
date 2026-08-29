@@ -217,3 +217,94 @@ class SpeechAnalyzer: ObservableObject {
                     insights.append(SpeechInsight(
                         title: "Hesitation",
                         description: "Unnatural pause (\(String(format: "%.1f", gap))s) mid-sentence.",
+                        timestamp: currentSeg.timestamp + currentSeg.duration,
+                        type: .negative
+                    ))
+                }
+            }
+        }
+        
+        // 3. Filler Words
+        let fillers = ["um", "uh", "like", "literally", "you know"]
+        var fillerCount = 0
+        for segment in segments {
+            let word = segment.substring.lowercased().trimmingCharacters(in: .punctuationCharacters)
+            if fillers.contains(word) {
+                fillerCount += 1
+                insights.append(SpeechInsight(
+                    title: "Filler Word",
+                    description: "Detected use of '\(word)'.",
+                    timestamp: segment.timestamp,
+                    type: .neutral
+                ))
+            }
+        }
+        
+        // 4. Rushed Sections
+        if segments.count > 5 {
+            for i in 0..<(segments.count - 5) {
+                let startSeg = segments[i]
+                let endSeg = segments[i+4]
+                let duration = endSeg.timestamp + endSeg.duration - startSeg.timestamp
+                if duration > 0 {
+                    let wpm = (5.0 / duration) * 60.0
+                    if wpm > 190 {
+                         if insights.last?.title != "Rushed Section" || (insights.last?.timestamp ?? -10) < startSeg.timestamp - 2 {
+                            insights.append(SpeechInsight(
+                                title: "Rushed Section",
+                                description: "~ \(Int(wpm)) WPM. Too fast.",
+                                timestamp: startSeg.timestamp,
+                                type: .negative
+                            ))
+                        }
+                    }
+                }
+            }
+        }
+        
+        // Calculate Smart Score
+        var score = 100.0
+        score -= (Double(badPauses) * 5.0)
+        score -= (Double(fillerCount) * 3.0)
+        score += min(Double(goodPauses) * 2.0, 10.0)
+        
+        return (insights.sorted { $0.timestamp < $1.timestamp }, min(max(score, 0), 100))
+    }
+    
+    // MARK: - 1. Pacing Score
+    private func calculatePacingScore(wpm: Double) -> Double {
+        if wpm >= 130 && wpm <= 160 {
+            return 100
+        } else if wpm < 130 {
+            return max(0, 100 - (130 - wpm) * 0.8)
+        } else {
+            return max(0, 100 - (wpm - 160) * 1.0)
+        }
+    }
+
+    // MARK: - 5. Tone (Audio Dynamics - RMS)
+    private func calculateTone(audioUrl: URL) async -> Double {
+        do {
+            let file = try AVAudioFile(forReading: audioUrl)
+            // Use safety check for empty files
+            if file.length == 0 { return 50 }
+            guard let buffer = AVAudioPCMBuffer(pcmFormat: file.processingFormat, frameCapacity: AVAudioFrameCount(file.length)) else { return 50 }
+            
+            try file.read(into: buffer)
+            
+            guard let channelData = buffer.floatChannelData?[0] else { return 50 }
+            let frameLength = Int(buffer.frameLength)
+            
+            var sumSquares: Float = 0
+            let step = 100 
+            var count = 0
+            
+            for i in stride(from: 0, to: frameLength, by: step) {
+                let sample = channelData[i]
+                sumSquares += sample * sample
+                count += 1
+            }
+            
+            if count == 0 { return 50 }
+            
+            let rms = sqrt(sumSquares / Float(count))
