@@ -89,3 +89,20 @@ class SpeechRecognizerManager: ObservableObject {
                     self.isProcessing = false
                 }
             }
+        }
+    }
+    
+    func cancelProcessing() {
+        recognitionTask?.cancel()
+        recognitionTask = nil
+        isProcessing = false
+    }
+    
+    func reset() {
+        cancelProcessing()
+        transcript = ""
+        transcriptionResult = nil
+        errorMessage = nil
+        isProcessing = false
+    }
+}
