@@ -62,3 +62,30 @@ class SpeechRecognizerManager: ObservableObject {
         self.speechRecognizer = recognizer
         
         guard let recognizer = recognizer, recognizer.isAvailable else {
+            self.errorMessage = "Speech recognition not available."
+            self.isProcessing = false
+            return
+        }
+        
+        // Create Request
+        let request = SFSpeechURLRecognitionRequest(url: url)
+        request.shouldReportPartialResults = true
+        
+        // Start Task
+        recognitionTask = recognizer.recognitionTask(with: request) { [weak self] result, error in
+            guard let self = self else { return }
+            
+            Task { @MainActor in
+                if let result = result {
+                    self.transcript = result.bestTranscription.formattedString
+                    self.transcriptionResult = result.bestTranscription
+                }
+                
+                if let error = error {
+                    print("Transcription error: \(error)")
+                    self.errorMessage = "Transcription failed: \(error.localizedDescription)"
+                    self.isProcessing = false
+                } else if result?.isFinal == true {
+                    self.isProcessing = false
+                }
+            }
