@@ -15,3 +15,38 @@ class LiveAudioRecorder: NSObject, ObservableObject, AVAudioRecorderDelegate {
     override init() {
         super.init()
     }
+    
+    func prepare() {
+        let session = AVAudioSession.sharedInstance()
+        do {
+            try session.setCategory(.playAndRecord, mode: .default, options: [.defaultToSpeaker, .allowBluetooth])
+            try session.setActive(true)
+        } catch {
+            print("Session error: \(error)")
+        }
+    }
+    
+    func startRecording() {
+        // 1. Path
+        let docDir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+        let url = docDir.appendingPathComponent("live_rec_\(Date().timeIntervalSince1970).m4a")
+        self.recordingURL = url
+        
+        // 2. Settings
+        let settings: [String: Any] = [
+            AVFormatIDKey: Int(kAudioFormatMPEG4AAC),
+            AVSampleRateKey: 44100,
+            AVNumberOfChannelsKey: 1,
+            AVEncoderAudioQualityKey: AVAudioQuality.high.rawValue
+        ]
+        
+        do {
+            let newRecorder = try AVAudioRecorder(url: url, settings: settings)
+            newRecorder.delegate = self
+            newRecorder.isMeteringEnabled = true
+            
+            if newRecorder.record() {
+                self.audioRecorder = newRecorder
+                self.isRecording = true
+                self.startTimer()
+            }
