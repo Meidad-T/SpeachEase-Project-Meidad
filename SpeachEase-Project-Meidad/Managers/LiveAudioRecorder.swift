@@ -50,3 +50,24 @@ class LiveAudioRecorder: NSObject, ObservableObject, AVAudioRecorderDelegate {
                 self.isRecording = true
                 self.startTimer()
             }
+        } catch {
+            print("Recording failed: \(error)")
+        }
+    }
+    
+    func stopRecording() -> URL? {
+        audioRecorder?.stop()
+        isRecording = false
+        timer?.invalidate()
+        let url = recordingURL
+        recordingURL = nil
+        return url
+    }
+    
+    private func startTimer() {
+        timer?.invalidate()
+        timer = Timer.scheduledTimer(withTimeInterval: 0.05, repeats: true) { [weak self] _ in
+            Task { @MainActor [weak self] in
+                guard let self = self, let rec = self.audioRecorder else { return }
+                
+                // 1. Update Duration
