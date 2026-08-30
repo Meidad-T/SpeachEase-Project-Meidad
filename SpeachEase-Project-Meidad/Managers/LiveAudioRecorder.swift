@@ -71,3 +71,17 @@ class LiveAudioRecorder: NSObject, ObservableObject, AVAudioRecorderDelegate {
                 guard let self = self, let rec = self.audioRecorder else { return }
                 
                 // 1. Update Duration
+                self.duration = rec.currentTime
+                
+                // 2. Update Metering for UI (Safe)
+                rec.updateMeters()
+                let power = rec.averagePower(forChannel: 0) // -160 ... 0
+                
+                // Normalize for visualizer (roughly -50db to 0db mapped to 0...1)
+                let minDb: Float = -50.0
+                let normalized = max(0.0, (power - minDb) / (0 - minDb))
+                self.audioLevel = normalized
+            }
+        }
+    }
+}
