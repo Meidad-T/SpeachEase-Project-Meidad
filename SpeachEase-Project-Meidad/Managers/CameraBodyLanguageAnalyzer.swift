@@ -251,3 +251,108 @@ actor CameraBodyLanguageAnalyzer {
         let total = Double(data.count)
         
         // Calculate Movement Intensity (Avg Displacement per Frame)
+        var leftWristMoves: [Double] = []
+        for i in 1..<data.count {
+            if let p1 = data[i-1].leftWrist, let p2 = data[i].leftWrist {
+                leftWristMoves.append(hypot(p2.x - p1.x, p2.y - p1.y))
+            }
+        }
+        let avgMove = leftWristMoves.reduce(0, +) / Double(max(1, leftWristMoves.count))
+        
+        for frame in data {
+            if let l = frame.leftWrist, let r = frame.rightWrist, let root = frame.root {
+                // Expansive: High & Wide
+                let isHigh = l.y < root.y && r.y < root.y
+                let isWide = abs(l.x - r.x) > 0.4
+                if isHigh || isWide { expansiveCount += 1 }
+            }
+        }
+        
+        // Goldilocks Zone for Movement
+        if avgMove < 0.012 {
+            // Too Little (Stiff)
+            score -= 25
+            insights.append(SpeechInsight(title: "Low Energy", description: "Your hands were stiff. Use gestures to emphasize points.", timestamp: 0, type: .negative))
+        } else if avgMove > 0.09 {
+            // Too Much (Distracting/Manic)
+            score -= 30
+            insights.append(SpeechInsight(title: "Distracting Gestures", description: "Your hand movements were excessive and distracting. Slow down.", timestamp: 0, type: .negative))
+        } else {
+            // Optimal Range (0.012 - 0.09)
+            insights.append(SpeechInsight(title: "Good Gesture Frequency", description: "You used a natural amount of hand movement.", timestamp: 0, type: .positive))
+        }
+        
+        // Power Posing Bonus (only if not manic)
+        let expansiveRatio = Double(expansiveCount) / total
+        if expansiveRatio > 0.2 && avgMove <= 0.09 {
+            insights.append(SpeechInsight(title: "Power Posing", description: "You used expansive, confident gestures.", timestamp: 0, type: .positive))
+        } else if expansiveRatio < 0.05 && avgMove > 0.012 {
+             // Moved but kept small?
+             score -= 5
+             insights.append(SpeechInsight(title: "Expand Your Space", description: "Your gestures were small. Don't be afraid to take up space.", timestamp: 0, type: .neutral))
+        }
+        
+        return (min(100, max(0, score)), insights)
+    }
+    
+    private func analyzeHead(data: [FrameData]) -> (Double, [SpeechInsight]) {
+        var score = 100.0
+        var insights: [SpeechInsight] = []
+        
+        var faceCount = 0
+        var yaws: [Double] = []
+        let total = Double(data.count)
+        
+        for frame in data {
+            if frame.hasFace {
+                faceCount += 1
+                if let y = frame.headYaw {
+                    yaws.append(y)
+                }
+            }
+        }
+        
+        let presenceRatio = Double(faceCount) / total
+        if presenceRatio < 0.5 {
+            return (50, [SpeechInsight(title: "Face Hidden", description: "Ensure your face is clearly visible.", timestamp: 0, type: .negative)])
+        }
+        
+        // Scanning Variance (Using Native Yaw in Radians)
+        let yawVariance = calculateVariance(yaws)
+        
+        // 0.01 variance roughly means +/- 0.1 radians (approx 6 degrees) standard deviation
+        // A good scan is probably +/- 30 degrees (0.5 rad), variance ~ 0.12?
+        // Let's set Stiff lower bound at 0.005 (very subtle motion)
+        // Wandering upper bound at 0.45 (relaxed from 0.3)
+        
+        if yawVariance < 0.005 {
+            // Stiff
+            score -= 20
+            insights.append(SpeechInsight(title: "Stiff Gaze", description: "You stared straight ahead. Scan the room to engage everyone.", timestamp: 0, type: .negative))
+        } else if yawVariance > 0.45 {
+            // Wandering / Shifty
+            score -= 25
+            insights.append(SpeechInsight(title: "Wandering Eyes", description: "Your gaze swung too wildly. Maintain controlled scanning.", timestamp: 0, type: .negative))
+        } else {
+            // Optimal (0.005 - 0.45)
+            insights.append(SpeechInsight(title: "Good Engagement", description: "You scanned the audience naturally.", timestamp: 0, type: .positive))
+        }
+        
+        return (min(100, max(0, score)), insights)
+    }
+    
+    private func transcribeAudio(url: URL) async -> String {
+        // Check for audio track presence first
+        let asset = AVURLAsset(url: url)
+        if let tracks = try? await asset.loadTracks(withMediaType: .audio), tracks.isEmpty {
+            return "Mic is turned off in video settings."
+        }
+        
+        guard SFSpeechRecognizer.authorizationStatus() == .authorized else {
+            return "Speech recognition not authorized."
+        }
+        
+        let recognizer = SFSpeechRecognizer()
+        if recognizer?.isAvailable != true {
+             return "Speech recognizer not available."
+        }
