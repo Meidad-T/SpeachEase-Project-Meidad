@@ -23,3 +23,14 @@ class VideoTestManager: ObservableObject {
                         try FileManager.default.removeItem(at: tempUrl)
                     }
                     
+                    if url.startAccessingSecurityScopedResource() {
+                        defer { url.stopAccessingSecurityScopedResource() }
+                        try FileManager.default.copyItem(at: url, to: tempUrl)
+                    } else {
+                        try FileManager.default.copyItem(at: url, to: tempUrl)
+                    }
+                }.value
+                
+                // Update state on MainActor
+                self.videoFileUrl = tempUrl
+                
