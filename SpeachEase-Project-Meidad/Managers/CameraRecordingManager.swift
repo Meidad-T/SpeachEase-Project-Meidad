@@ -97,3 +97,44 @@ class CameraRecordingManager: ObservableObject {
     }
     
     func applyTheme(_ theme: CameraTheme) {
+        handColor = theme.hand
+        bodyColor = theme.body
+        faceColor = theme.face
+    }
+    
+    // MARK: - Persistence
+    private func loadColors() {
+        handColor = loadColor(key: "camera_handColor") ?? .green
+        bodyColor = loadColor(key: "camera_bodyColor") ?? .blue
+        faceColor = loadColor(key: "camera_faceColor") ?? .yellow
+    }
+    
+    private func saveColor(_ color: Color, key: String) {
+        if let data = try? NSKeyedArchiver.archivedData(withRootObject: UIColor(color), requiringSecureCoding: false) {
+            UserDefaults.standard.set(data, forKey: key)
+        }
+    }
+    
+    private func loadColor(key: String) -> Color? {
+        guard let data = UserDefaults.standard.data(forKey: key),
+              let uiColor = try? NSKeyedUnarchiver.unarchivedObject(ofClass: UIColor.self, from: data) else { return nil }
+        return Color(uiColor: uiColor)
+    }
+    
+    func startRecording() {
+        startRecordingTrigger = true
+        // Timer will start when isRecording becomes true via the VC callback
+        // But for immediate UI feedback we can prepare
+        recordingDuration = 0
+    }
+    
+    func stopRecording() {
+        stopRecordingTrigger = true
+        timer?.invalidate()
+    }
+    
+    func reset() {
+        startRecordingTrigger = false
+        stopRecordingTrigger = false
+        isRecording = false
+        recordedVideoURL = nil
