@@ -138,3 +138,28 @@ class CameraRecordingManager: ObservableObject {
         stopRecordingTrigger = false
         isRecording = false
         recordedVideoURL = nil
+        errorMessage = nil
+        recordingDuration = 0
+        timer?.invalidate()
+    }
+    
+    // Called by Coordinator
+    func updateRecordingState(isRecording: Bool) {
+        self.isRecording = isRecording
+        if isRecording {
+            startTimer()
+        } else {
+            timer?.invalidate()
+        }
+    }
+    
+    private func startTimer() {
+        timer?.invalidate()
+        recordingDuration = 0
+        timer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { [weak self] _ in
+            Task { @MainActor [weak self] in
+                self?.recordingDuration += 0.1
+            }
+        }
+    }
+}
