@@ -180,3 +180,79 @@ class LearningManager: ObservableObject {
                  ], quizQuestion: "What is the purpose of 'Power Posing' before a speech?", quizOptions: ["To look cool", "To stretch your muscles", "To boost confidence hormones", "To practice for a movie role"], correctOptionIndex: 2)
              ]
              
+        case .interview:
+             return [
+                 Lesson(id: "int-1", title: "Research First", icon: "magnifyingglass", content: [
+                     "Never walk into an interview blind.",
+                     "Research the company's mission, recent news, and the interviewer's background. It allows you to ask targeted, smart questions."
+                 ], quizQuestion: "Why should you research the interviewer?", quizOptions: ["To stalk them", "To ask targeted, smart questions", "To find their home address", "To verify their age"], correctOptionIndex: 1),
+
+                 Lesson(id: "int-2", title: "Elevator Pitch", icon: "timer", content: [
+                     "'Tell me about yourself' is not an invitation to recite your biography.",
+                     "Keep it to 2 minutes: Past (Overview), Present (Current Role), and Future (Why you are here)."
+                 ], quizQuestion: "What is a good structure for 'Tell me about yourself'?", quizOptions: ["Childhood -> School -> Now", "Past -> Present -> Future", "Listing every job you've had", "Just your hobbies"], correctOptionIndex: 1),
+
+                 Lesson(id: "int-3", title: "The STAR Method", icon: "star.fill", content: [
+                     "For behavioral questions ('Tell me about a time...'), use STAR.",
+                     "Situation (Context), Task (Challenge), Action (What YOU did), Result (Outcome). Focus heavily on the Action and Result."
+                 ], quizQuestion: "Which part of STAR should you focus on most?", quizOptions: ["Situation", "Task", "Action and Result", "None of them"], correctOptionIndex: 2),
+
+                 Lesson(id: "int-4", title: "Weaknesses", icon: "exclamationmark.triangle", content: [
+                     "Don't say 'I work too hard' (it's a cliché) or 'I'm lazy' (it's fatal).",
+                     "Choose a real weakness that isn't critical to the job, and show how you are actively working to improve it."
+                 ], quizQuestion: "What makes a good answer for 'What is your weakness'?", quizOptions: ["A generic cliché", "A fatal flaw", "A real weakness with an improvement plan", "Denying you have any"], correctOptionIndex: 2),
+
+                 Lesson(id: "int-5", title: "Questions to Ask", icon: "questionmark.circle", content: [
+                     "At the end, never say 'I have no questions'.",
+                     "Ask about team culture, challenges they face, or what success looks like in this role. It shows you are thinking critically."
+                 ], quizQuestion: "What does asking questions at the end show?", quizOptions: ["That you weren't listening", "Critical thinking and genuine interest", "That you are confused", "Nothing"], correctOptionIndex: 1),
+
+                 Lesson(id: "int-6", title: "Body Language", icon: "figure.seated.side", content: [
+                     "In an interview, mirror the energy of your interviewer.",
+                     "Sit up straight, make eye contact, and don't fidget. If they lean in, you lean in."
+                 ], quizQuestion: "What is 'mirroring' in an interview context?", quizOptions: ["Copying every move exactly", "Matching their energy and posture", "Using a literal mirror", "Repeating their words back"], correctOptionIndex: 1),
+                 
+                 Lesson(id: "int-7", title: "Zoom Etiquette", icon: "video.fill", content: [
+                     "For virtual interviews, look at the CAMERA, not the screen.",
+                     "Eye contact happens through the lens. Use a simple background and ensure good lighting (light in front of you, not behind)."
+                 ], quizQuestion: "Where should you look during a Zoom interview to make eye contact?", quizOptions: ["The screen", "The keyboard", "The camera lens", "Your own reflection"], correctOptionIndex: 2),
+
+                 Lesson(id: "int-8", title: "Salary Talk", icon: "dollarsign.circle", content: [
+                     "Don't bring up salary in the first screening unless asked.",
+                     "If asked for a number, give a range based on market research, or ask 'What is the budget for this role?'"
+                 ], quizQuestion: "What is a good strategy when asked for salary expectations?", quizOptions: ["Give a specific low number", "Give a researched range", "Refuse to answer", "Ask for a million dollars"], correctOptionIndex: 1),
+                 
+                 Lesson(id: "int-9", title: "The Follow-Up", icon: "envelope.fill", content: [
+                     "Send a Thank You email within 24 hours.",
+                     "Personalize it. Mention something specific you discussed to show you were paying attention."
+                 ], quizQuestion: "When should you send a Thank You email?", quizOptions: ["Within 24 hours", "Next week", "Before the interview", "Never"], correctOptionIndex: 0),
+                 
+                 Lesson(id: "int-10", title: "Handling Rejection", icon: "arrow.turn.up.forward.iphone", content: [
+                     "Rejection is not failure; it's redirection.",
+                     "Ask for feedback politely. Even if they don't hire you now, a graceful exit keeps the door open for future opportunities."
+                 ], quizQuestion: "Why should you ask for feedback after a rejection?", quizOptions: ["To argue with them", "To learn and keep the door open", "To make them feel guilty", "To sue them"], correctOptionIndex: 1)
+             ]
+             
+        case .vocab:
+            return [
+                Lesson(id: "vocab-1", title: "Killer Fillers", icon: "scissors", content: [
+                    "Filler words like 'um', 'like', and 'basically' dilute your message.",
+                    "They usually happen when your brain is searching for a word. Train yourself to just PAUSE instead."
+                ], quizQuestion: "What should you do instead of saying 'um'?", quizOptions: ["Say 'like'", "Pause silently", "Cough", "Apologize"], correctOptionIndex: 1),
+                
+                Lesson(id: "vocab-2", title: "Power Verbs", icon: "bolt.fill", content: [
+                    "Weak verbs need adverbs (e.g., 'ran quickly'). Power verbs stand alone (e.g., 'sprinted').",
+                    "Replace 'talked about' with 'discussed', 'debate', or 'outlined'. Be precise."
+                ], quizQuestion: "Which is a 'Power Verb'?", quizOptions: ["Walked slowly", "Looked at", "Scrutinized", "Said"], correctOptionIndex: 2),
+                
+                Lesson(id: "vocab-3", title: "Jargon Busting", icon: "hammer.fill", content: [
+                    "Jargon alienates anyone who isn't an expert.",
+                    "Explain complex concepts in simple terms (The Feynman Technique). If an 8-year-old wouldn't get it, simplify it."
+                ], quizQuestion: "Why should you avoid heavy jargon?", quizOptions: ["It makes you look smart", "It alienates non-experts", "It is required for business", "It uses more words"], correctOptionIndex: 1),
+                
+                Lesson(id: "vocab-4", title: "The Rule of Three", icon: "3.circle.fill", content: [
+                    "The human brain loves patterns of three (e.g., 'Life, Liberty, and the pursuit of Happiness').",
+                    "Group your points, lists, or adjectives in threes for maximum memorability."
+                ], quizQuestion: "Why is the Rule of Three effective?", quizOptions: ["It's a magic number", "It's memorable and rhythmic", "It's odd", "It's shorter than two"], correctOptionIndex: 1),
+                
+                Lesson(id: "vocab-5", title: "Active vs Passive", icon: "arrow.right.circle.fill", content: [
