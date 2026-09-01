@@ -256,3 +256,49 @@ class LearningManager: ObservableObject {
                 ], quizQuestion: "Why is the Rule of Three effective?", quizOptions: ["It's a magic number", "It's memorable and rhythmic", "It's odd", "It's shorter than two"], correctOptionIndex: 1),
                 
                 Lesson(id: "vocab-5", title: "Active vs Passive", icon: "arrow.right.circle.fill", content: [
+                    "Passive voice: 'The ball was thrown by John.' Active voice: 'John threw the ball.'",
+                    "Active voice is stronger, clearer, and shorter. Use it for impact."
+                ], quizQuestion: "Which sentence is in Active Voice?", quizOptions: ["Mistakes were made", "The report was written by me", "I wrote the report", "It was decided"], correctOptionIndex: 2),
+                
+                Lesson(id: "vocab-6", title: "Metaphors", icon: "paintpalette.fill", content: [
+                    "Metaphors create pictures in the listener's mind.",
+                    "Don't just say 'it's complicated'. Say 'it's a tangled knot'. Imagery sticks."
+                ], quizQuestion: "What is the primary benefit of using metaphors?", quizOptions: ["They sound poetic", "They create visual imagery/understanding", "They confuse people", "They take longer to explain"], correctOptionIndex: 1),
+                
+                Lesson(id: "vocab-7", title: "Conciseness", icon: "arrow.down.right.and.arrow.up.left", content: [
+                    "If you can say it in 5 words, don't use 10.",
+                    "Edit your speech. Cut 'I think that', 'sort of', 'in my opinion'. Just state the fact."
+                ], quizQuestion: "What phrase dilutes your message?", quizOptions: ["I will", "Sort of", "Therefore", "However"], correctOptionIndex: 1),
+                
+                Lesson(id: "vocab-8", title: "Transition Words", icon: "link", content: [
+                    "Don't jump abruptly between topics. Use bridges.",
+                    "Words like 'Consequently', 'However', 'Furthermore', and 'On the other hand' guide the listener safely to your next point."
+                ], quizQuestion: "What is the purpose of transition words?", quizOptions: ["To sound smart", "To connect ideas smoothly", "To fill time", "To confuse the audience"], correctOptionIndex: 1),
+                
+                Lesson(id: "vocab-9", title: "Sensory Language", icon: "nose.fill", content: [
+                    "Engage the senses. Don't just explain logic; verify how it FEELS, LOOKS, or SOUNDS.",
+                    "Instead of 'it was a bad day', say 'it was a heavy, grinding day'."
+                ], quizQuestion: "What does sensory language appeal to?", quizOptions: ["Logic only", "Sight, sound, touch, etc.", "Math skills", "Grammar"], correctOptionIndex: 1),
+                
+                Lesson(id: "vocab-10", title: "Audience Adaptation", icon: "person.2.wave.2.fill", content: [
+                    "Vocabulary is not one-size-fits-all.",
+                    "You speak differently to a Board of Directors than to a kindergarten class. Adapt your complexity to your audience."
+                ], quizQuestion: "What is the most important factor in choosing vocabulary?", quizOptions: ["Showing off", "The dictionary size", "The audience", "The length of words"], correctOptionIndex: 2)
+            ]
+            
+        default:
+             // Generate generic but meaningful structure for others to avoid crash
+            return (1...10).map { i in
+                Lesson(
+                    id: "\(focus.rawValue)-\(i)",
+                    title: "\(focus.title) Step \(i)",
+                    icon: focus.icon,
+                    content: ["This is a focused lesson on \(focus.title). Keep practicing!"],
+                    quizQuestion: "Are you improving?",
+                    quizOptions: ["Yes!", "Not yet"],
+                    correctOptionIndex: 0
+                )
+            }
+        }
+    }
+}
