@@ -158,3 +158,69 @@ actor BodyLanguageAnalyzer {
         } else if yawVariance > 0.01 {
             scanningScore = 100
              insights.append(SpeechInsight(title: "Good Room Scanning", description: "You engaged different parts of the audience.", timestamp: 0, type: .positive))
+        } else {
+            scanningScore = 80
+        }
+        
+        // 2. Hand Gestures (Wrist Variance)
+        // Create vector of wrist positions (relative to Root if possible to cancel body sway, but raw is okay for stationary cam)
+        // We'll just take raw wrist distances from body center
+        var leftDists: [Double] = []
+        var rightDists: [Double] = []
+        
+        for frame in data {
+            if let root = frame.root {
+                if let l = frame.leftWrist {
+                    let d = Double(hypot(l.x - root.x, l.y - root.y))
+                    leftDists.append(d)
+                }
+                if let r = frame.rightWrist {
+                    let d = Double(hypot(r.x - root.x, r.y - root.y))
+                    rightDists.append(d)
+                }
+            }
+        }
+        
+        let leftVar = calculateVariance(leftDists)
+        let rightVar = calculateVariance(rightDists)
+        let totalHandMotion = leftVar + rightVar
+        
+        var gestureScore = 0.0
+        
+        if totalHandMotion < 0.005 {
+            gestureScore = 40
+            insights.append(SpeechInsight(title: "Low Hand Energy", description: "Your hands were very still. Use gestures to emphasize points.", timestamp: duration/2, type: .negative))
+        } else if totalHandMotion > 0.02 {
+            gestureScore = 100
+            insights.append(SpeechInsight(title: "Dynamic Gestures", description: "Great use of hands to convey energy.", timestamp: duration/2, type: .positive))
+        } else {
+            gestureScore = 75
+        }
+        
+        // 3. Room Movement (Root X Variance)
+        let rootXs = data.compactMap { $0.root?.x }.map { Double($0) }
+        let movementVar = calculateVariance(rootXs)
+        var movementScore = 0.0
+        
+        if movementVar < 0.001 {
+            movementScore = 50
+            insights.append(SpeechInsight(title: "Stationary", description: "You stayed in one spot. Try moving to mark transitions.", timestamp: duration - 1, type: .neutral))
+        } else {
+            movementScore = 100
+            insights.append(SpeechInsight(title: "Stage Presence", description: "You used the space well.", timestamp: duration/2, type: .positive))
+        }
+        
+        // Final Score Weighting
+        let finalScore = (eyeContactScore * 0.4) + (gestureScore * 0.3) + (movementScore * 0.2) + (scanningScore * 0.1)
+        
+        return BodyLanguageReport(
+            score: finalScore,
+            eyeContactScore: eyeContactScore,
+            insights: insights
+        )
+    }
+    
+    // Helpers
+    private func calculateVariance(_ data: [Double]) -> Double {
+        guard data.count > 1 else { return 0 }
+        let mean = data.reduce(0, +) / Double(data.count)
