@@ -34,3 +34,10 @@ class VideoTestManager: ObservableObject {
                 // Update state on MainActor
                 self.videoFileUrl = tempUrl
                 
+            } catch {
+                print("File copy failed: \(error.localizedDescription)")
+                self.errorMessage = "Failed to load video: \(error.localizedDescription)"
+            }
+        }
+    }
+}
