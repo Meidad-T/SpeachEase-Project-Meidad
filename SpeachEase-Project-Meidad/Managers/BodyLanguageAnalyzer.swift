@@ -224,3 +224,44 @@ actor BodyLanguageAnalyzer {
     private func calculateVariance(_ data: [Double]) -> Double {
         guard data.count > 1 else { return 0 }
         let mean = data.reduce(0, +) / Double(data.count)
+        let sumSq = data.reduce(0) { $0 + ($1 - mean) * ($1 - mean) }
+        return sumSq / Double(data.count)
+    }
+    
+    // Existing Helpers
+    private func getDuration(url: URL) async -> Double {
+        let asset = AVURLAsset(url: url)
+        if let duration = try? await asset.load(.duration) {
+            return CMTimeGetSeconds(duration)
+        }
+        return 0
+    }
+    
+    private func generateFrames(url: URL, duration: Double, fps: Double) async -> [UIImage] {
+        let asset = AVURLAsset(url: url)
+        let generator = AVAssetImageGenerator(asset: asset)
+        generator.appliesPreferredTrackTransform = true
+        generator.requestedTimeToleranceBefore = .zero
+        generator.requestedTimeToleranceAfter = .zero
+        
+        var images: [UIImage] = []
+        let interval = 1.0 / fps
+        
+        var times: [NSValue] = []
+        for t in stride(from: 0.0, to: duration, by: interval) {
+            times.append(NSValue(time: CMTime(seconds: t, preferredTimescale: 600)))
+        }
+        
+        // Limit to 50 frames max to avoid OOM for now
+        let limitedTimes = Array(times.prefix(50))
+        
+        for timeVal in limitedTimes {
+            let time = timeVal.timeValue
+            if let image = try? await generator.image(at: time).image {
+                images.append(UIImage(cgImage: image))
+            }
+        }
+        
+        return images
+    }
+}
