@@ -125,3 +125,26 @@ class AIAnalysisManager: ObservableObject {
         
         ## 🗣️ Tone & Delivery
         Your tone variance score was **\(Int(metrics.toneScore))/100**.
+        \(metrics.toneScore > 80 ? "- **Strength**: Great use of pitch to emphasize points." : "- **Tip**: Your delivery was relatively potential. Try to 'punch' important words.")
+        
+        ## 📝 Vocabulary
+        - **Unique Words**: \(Int(metrics.vocabularyScore)) / 100 score.
+        - **Filler Words**: \(metrics.insights.filter { $0.title == "Filler Word" }.count) detectd.
+        
+        ## 💡 Key Moments
+        \(metrics.insights.prefix(3).map { "- \($0.title): \($0.description)" }.joined(separator: "\n"))
+        """
+    }
+}
+
+// Helper Struct to pass raw data from SpeechAnalyzer to AI Manager
+struct SpeechMetrics {
+    let overallScore: Int
+    let pacingScore: Double
+    let pacingWPM: Double
+    let vocabularyScore: Double
+    let toneScore: Double
+    let engagementScore: Double
+    let pauseScore: Double
+    let insights: [SpeechInsight]
+}
