@@ -406,3 +406,173 @@ struct CameraTestView: View {
                     VStack(alignment: .leading, spacing: 8) {
                         Toggle("Hand Lines", isOn: $cameraManager.showHandLines)
                             .tint(Color("AccentColor"))
+                        Toggle("Body Lines", isOn: $cameraManager.showBodyLines)
+                            .tint(Color("AccentColor"))
+                        Toggle("Face Lines", isOn: $cameraManager.showFaceLines)
+                            .tint(Color("AccentColor"))
+                    }
+                    
+                    Divider()
+                    
+                    // Link to Themes
+                    settingsRow(title: "Color Themes", icon: "paintpalette.fill", color: .pink) {
+                        currentSettingsPage = .themes
+                    }
+                }
+                
+            case .themes:
+                // Theme Grid
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("Choose Theme")
+                        .font(.headline)
+                    
+                    ScrollView {
+                        LazyVGrid(columns: [
+                            GridItem(.flexible()),
+                            GridItem(.flexible()),
+                            GridItem(.flexible())
+                        ], spacing: 12) {
+                            ForEach(CameraRecordingManager.CameraTheme.themes) { theme in
+                                Button {
+                                    withAnimation {
+                                        cameraManager.applyTheme(theme)
+                                    }
+                                } label: {
+                                    // Theme Preview (Stripes)
+                                    HStack(spacing: 0) {
+                                        Rectangle().fill(theme.hand)
+                                        Rectangle().fill(theme.body)
+                                        Rectangle().fill(theme.face)
+                                    }
+                                    .frame(height: 40)
+                                    .cornerRadius(8)
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 8)
+                                            .stroke(Color.primary.opacity(0.1), lineWidth: 1)
+                                    )
+                                }
+                                .buttonStyle(.plain)
+                            }
+                        }
+                        .padding(.vertical, 4)
+                    }
+                    .frame(maxHeight: 300) // Limit height so it doesn't take over screen
+                }
+                
+            case .audio:
+                // Audio Sub-menu
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("Audio Input")
+                        .font(.headline)
+                        .padding(.bottom, 4)
+                    
+                    Toggle("Enable Mic", isOn: $cameraManager.isAudioEnabled)
+                        .tint(Color("AccentColor"))
+                    
+                    Text("Disabling the mic will result in no speech transcript analysis.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+        }
+        .padding()
+        .background(.ultraThinMaterial)
+        .cornerRadius(24)
+        .frame(width: 320) // Wider for the grid
+        .padding(16)
+        .shadow(radius: 10)
+    }
+    
+    func settingsRow(title: String, icon: String, color: Color, action: @escaping () -> Void) -> some View {
+        Button(action: { withAnimation { action() } }) {
+            HStack {
+                Image(systemName: icon)
+                    .foregroundStyle(.white)
+                    .frame(width: 28, height: 28)
+                    .background(color)
+                    .clipShape(RoundedRectangle(cornerRadius: 6))
+                
+                Text(title)
+                    .foregroundStyle(.primary)
+                    .font(.subheadline)
+                    .fontWeight(.medium)
+                
+                Spacer()
+                
+                Image(systemName: "chevron.right")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            .padding(.vertical, 8)
+            .contentShape(Rectangle()) // Make full row tapable
+        }
+        .buttonStyle(.plain)
+    }
+    
+    private func performAnalysis(url: URL) {
+        isAnalyzing = true
+        
+        Task {
+            let analyzer = CameraBodyLanguageAnalyzer()
+            let report = await analyzer.analyzeVideo(url: url)
+            
+            await MainActor.run {
+                self.analysisReport = report
+                self.isAnalyzing = false
+                self.showAnalysis = true
+            }
+        }
+    }
+}
+
+// MARK: - Helper Views
+
+// MARK: - Grain Effect
+
+
+struct SlideToAnalyzeButton: View {
+    var action: () -> Void
+    
+    @State private var offset: CGFloat = 0
+    private let height: CGFloat = 60 // Thicker
+    private let buttonWidth: CGFloat = 300 // Constrained width
+    
+    var body: some View {
+        ZStack(alignment: .leading) {
+            // Track Background
+            Capsule()
+                .fill(.ultraThinMaterial)
+                .overlay(Capsule().stroke(Color.white.opacity(0.1), lineWidth: 1))
+            
+            // Text "Slide to Analyze"
+            Text("Slide to Analyze")
+                .font(.headline)
+                .foregroundStyle(Color.primary)
+                .frame(maxWidth: .infinity)
+                .opacity(offset > 10 ? 0 : 1)
+                .animation(.easeOut, value: offset)
+            
+            // Slider Knob
+            ZStack {
+                Circle()
+                    .fill(Color.white)
+                    .shadow(radius: 2)
+                
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 20, weight: .bold))
+                    .foregroundStyle(Color.black)
+            }
+            .frame(width: height - 8, height: height - 8)
+            .padding(.leading, 4)
+            .offset(x: offset)
+            .gesture(
+                DragGesture()
+                    .onChanged { value in
+                        if value.translation.width > 0 {
+                            // Max drag distance = container width - knob width - padding
+                            let maxDrag = buttonWidth - height 
+                            offset = min(max(0, value.translation.width), maxDrag) 
+                        }
+                    }
+                    .onEnded { value in
+                        let maxDrag = buttonWidth - height
