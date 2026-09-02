@@ -88,3 +88,40 @@ class AIAnalysisManager: ObservableObject {
     
     private func generateHeadline(score: Int) -> String {
         switch score {
+        case 95...100: return "Outstanding! TED Talk Ready."
+        case 85..<95: return "Excellent Delivery. Very Polished."
+        case 75..<85: return "Great Job. A Few Refinements Needed."
+        case 60..<75: return "Good Effort. Focus on Flow."
+        default: return "Keep Practicing. You're Improving."
+        }
+    }
+    
+    private func generateNarrative(metrics: SpeechMetrics) -> String {
+        // Short Summary (1-2 lines max)
+        var narrative = "Your pacing (\(Int(metrics.pacingWPM)) WPM) "
+        if metrics.pacingWPM > 160 {
+            narrative += "was quite fast, which reduced clarity. "
+        } else if metrics.pacingWPM < 110 {
+            narrative += "was a bit slow, lacking energy. "
+        } else {
+            narrative += "was excellent and easy to follow. "
+        }
+        
+        if metrics.toneScore > 80 {
+            narrative += "Combined with your engaging tone, this was a strong performance."
+        } else {
+             narrative += "Try adding more vocal variety to keep the listener hooked."
+        }
+        return narrative
+    }
+    
+    private func generateDeepDive(metrics: SpeechMetrics, transcript: String) -> String {
+        return """
+        # Detailed Analysis
+        
+        ## ⏱️ Pacing & Flow
+        You spoke at an average of **\(Int(metrics.pacingWPM)) words per minute**.
+        \(metrics.pacingWPM > 160 ? "- **Issue**: High speed can make complex ideas hard to grasp.\n- **Tip**: Slow down on key transitions." : "- **Strength**: Your pace allows the audience to digest information.")
+        
+        ## 🗣️ Tone & Delivery
+        Your tone variance score was **\(Int(metrics.toneScore))/100**.
