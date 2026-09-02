@@ -576,3 +576,106 @@ struct SlideToAnalyzeButton: View {
                     }
                     .onEnded { value in
                         let maxDrag = buttonWidth - height
+                        if offset > (maxDrag * 0.8) {
+                            // Trigger
+                            HapticManager.shared.notification(type: .success)
+                            action()
+                            // Reset
+                            withAnimation { offset = 0 }
+                        } else {
+                            // Snap back
+                            withAnimation(.spring()) {
+                                offset = 0
+                            }
+                        }
+                    }
+            )
+        }
+        .frame(width: buttonWidth, height: height)
+        .clipShape(Capsule())
+    }
+}
+
+// Simple Haptic Helper (assuming one exists or creating mini one)
+@MainActor
+class HapticManager {
+    static let shared = HapticManager()
+    func notification(type: UINotificationFeedbackGenerator.FeedbackType) {
+        UINotificationFeedbackGenerator().notificationOccurred(type)
+    }
+}
+
+struct CameraViewWrapper: UIViewControllerRepresentable {
+    @ObservedObject var manager: CameraRecordingManager
+    
+    func makeUIViewController(context: Context) -> CameraRecordingViewController {
+        let controller = CameraRecordingViewController()
+        controller.delegate = context.coordinator
+        controller.updateOverlaySettings(
+            hands: manager.showHandLines,
+            body: manager.showBodyLines,
+            face: manager.showFaceLines,
+            handColor: UIColor(manager.handColor),
+            bodyColor: UIColor(manager.bodyColor),
+            faceColor: UIColor(manager.faceColor)
+        )
+        controller.updateAudioSettings(enabled: manager.isAudioEnabled)
+        return controller
+    }
+    
+    func updateUIViewController(_ uiViewController: CameraRecordingViewController, context: Context) {
+        
+        // Update Toggles & Colors
+        uiViewController.updateOverlaySettings(
+            hands: manager.showHandLines,
+            body: manager.showBodyLines,
+            face: manager.showFaceLines,
+            handColor: UIColor(manager.handColor),
+            bodyColor: UIColor(manager.bodyColor),
+            faceColor: UIColor(manager.faceColor)
+        )
+        
+        uiViewController.updateAudioSettings(enabled: manager.isAudioEnabled)
+        
+        if manager.startRecordingTrigger {
+            uiViewController.startRecording()
+            DispatchQueue.main.async {
+                manager.startRecordingTrigger = false
+                manager.updateRecordingState(isRecording: true)
+                manager.recordedVideoURL = nil
+            }
+        }
+        
+        if manager.stopRecordingTrigger {
+            uiViewController.stopRecording()
+            DispatchQueue.main.async {
+                manager.stopRecordingTrigger = false
+                manager.updateRecordingState(isRecording: false)
+            }
+        }
+    }
+    
+    func makeCoordinator() -> Coordinator {
+        Coordinator(manager: manager)
+    }
+    
+    class Coordinator: NSObject, CameraControllerDelegate {
+        var manager: CameraRecordingManager
+        
+        init(manager: CameraRecordingManager) {
+            self.manager = manager
+        }
+        
+        func didFinishRecording(url: URL) {
+            let manager = self.manager
+            DispatchQueue.main.async {
+                manager.recordedVideoURL = url
+                manager.updateRecordingState(isRecording: false)
+            }
+        }
+        
+        func didFailRecording(error: Error) {
+            // Handle error
+        }
+    }
+}
