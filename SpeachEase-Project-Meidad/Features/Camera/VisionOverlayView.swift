@@ -92,3 +92,42 @@ class VisionOverlayView: UIView {
             }
         }
         
+        // Draw Faces
+        if showFaceLines {
+            context.setStrokeColor(faceColor.cgColor)
+            context.setLineWidth(1.5)
+            for path in data.faceChains {
+                drawPath(path.points, closed: path.isClosed, context: context, drawingRect: drawingRect)
+            }
+        }
+    }
+    
+    private func convert(_ point: CGPoint, to drawingRect: CGRect) -> CGPoint {
+        // Point is (0..1) with (0,0) at Bottom-Left (Vision standard)
+        // Screen Y = Rect.minY + (1 - point.y) * Rect.height
+        // Screen X = Rect.minX + point.x * Rect.width
+        
+        let screenX = drawingRect.minX + point.x * drawingRect.width
+        let screenY = drawingRect.minY + (1 - point.y) * drawingRect.height
+        return CGPoint(x: screenX, y: screenY)
+    }
+    
+    private func drawChain(_ points: [CGPoint], context: CGContext, drawingRect: CGRect, drawDots: Bool, color: UIColor) {
+        guard !points.isEmpty else { return }
+        
+        var previousPoint: CGPoint?
+        
+        for point in points {
+            let screenPoint = convert(point, to: drawingRect)
+            
+            if let prev = previousPoint {
+                context.move(to: prev)
+                context.addLine(to: screenPoint)
+                context.strokePath()
+            }
+            
+            if drawDots {
+                context.setFillColor(color.withAlphaComponent(0.6).cgColor)
+                context.fillEllipse(in: CGRect(x: screenPoint.x - 4, y: screenPoint.y - 4, width: 8, height: 8))
+            }
+            
