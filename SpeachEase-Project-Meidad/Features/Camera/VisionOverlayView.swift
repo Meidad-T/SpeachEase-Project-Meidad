@@ -131,3 +131,27 @@ class VisionOverlayView: UIView {
                 context.fillEllipse(in: CGRect(x: screenPoint.x - 4, y: screenPoint.y - 4, width: 8, height: 8))
             }
             
+            previousPoint = screenPoint
+        }
+    }
+    
+    private func drawPath(_ points: [CGPoint], closed: Bool, context: CGContext, drawingRect: CGRect) {
+        guard !points.isEmpty else { return }
+        
+        context.beginPath()
+        
+        for (index, point) in points.enumerated() {
+            let screenPoint = convert(point, to: drawingRect)
+            if index == 0 {
+                context.move(to: screenPoint)
+            } else {
+                context.addLine(to: screenPoint)
+            }
+        }
+        
+        if closed {
+            context.closePath()
+        }
+        context.strokePath()
+    }
+}
