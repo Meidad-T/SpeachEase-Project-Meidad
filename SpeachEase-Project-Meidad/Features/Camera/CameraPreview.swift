@@ -48,3 +48,12 @@ class CameraViewController: UIViewController {
                 }
                 
                 // Start running on a background thread to allow UI to load faster
+                DispatchQueue.global(qos: .userInitiated).async {
+                    session.startRunning()
+                }
+            }
+        } catch {
+            print("Error setting up camera: \(error.localizedDescription)")
+        }
+    }
+}
