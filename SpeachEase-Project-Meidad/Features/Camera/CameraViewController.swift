@@ -193,3 +193,84 @@ class CameraRecordingViewController: UIViewController, AVCaptureFileOutputRecord
             try audioSession.setActive(true)
         } catch {
             print("Failed to setup audio session: \(error)")
+        }
+    }
+    
+    func startRecording() {
+        guard let output = captureSession?.outputs.first(where: { $0 is AVCaptureMovieFileOutput }) as? AVCaptureMovieFileOutput else { return }
+        
+        // Remove old file
+        let tempUrl = FileManager.default.temporaryDirectory.appendingPathComponent("temp_camera_recording.mov")
+        try? FileManager.default.removeItem(at: tempUrl)
+        
+        output.startRecording(to: tempUrl, recordingDelegate: self)
+    }
+    
+    func stopRecording() {
+        movieOutput.stopRecording()
+    }
+    
+    // MARK: - Vision Delegate
+    nonisolated func captureOutput(_ output: AVCaptureOutput, didOutput sampleBuffer: CMSampleBuffer, from connection: AVCaptureConnection) {
+        guard let pixelBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) else { return }
+        
+        let width = CVPixelBufferGetWidth(pixelBuffer)
+        let height = CVPixelBufferGetHeight(pixelBuffer)
+        let size = CGSize(width: Double(width), height: Double(height))
+        
+        let handler = VNImageRequestHandler(cvPixelBuffer: pixelBuffer, orientation: .up, options: [:])
+        
+        let handPoseRequest = VNDetectHumanHandPoseRequest()
+        let faceLandmarksRequest = VNDetectFaceLandmarksRequest()
+        let bodyPoseRequest = VNDetectHumanBodyPoseRequest()
+        
+        do {
+            try handler.perform([handPoseRequest, faceLandmarksRequest, bodyPoseRequest])
+            
+            // Extract Data
+            var bodyChains: [[CGPoint]] = []
+            var handChains: [[CGPoint]] = []
+            var faceChains: [OverlayData.FacePath] = []
+            
+            // Body
+            if let bodyResults = bodyPoseRequest.results {
+                for body in bodyResults {
+                    if let points = try? body.recognizedPoints(.all) {
+                         let chains: [[VNHumanBodyPoseObservation.JointName]] = [
+                            [.leftWrist, .leftElbow, .leftShoulder],
+                            [.rightWrist, .rightElbow, .rightShoulder],
+                            [.leftShoulder, .neck, .rightShoulder]
+                         ]
+                         for chain in chains {
+                             let pts = chain.compactMap { joint -> CGPoint? in
+                                 guard let p = points[joint], p.confidence > 0.3 else { return nil }
+                                 return p.location
+                             }
+                             if !pts.isEmpty { bodyChains.append(pts) }
+                         }
+                    }
+                }
+            }
+            
+            // Hands
+            if let handResults = handPoseRequest.results {
+                for hand in handResults {
+                    if let points = try? hand.recognizedPoints(.all) {
+                         let fingers: [[VNHumanHandPoseObservation.JointName]] = [
+                             [.thumbTip, .thumbIP, .thumbMP, .thumbCMC, .wrist],
+                             [.indexTip, .indexDIP, .indexPIP, .indexMCP, .wrist],
+                             [.middleTip, .middleDIP, .middlePIP, .middleMCP, .wrist],
+                             [.ringTip, .ringDIP, .ringPIP, .ringMCP, .wrist],
+                             [.littleTip, .littleDIP, .littlePIP, .littleMCP, .wrist]
+                         ]
+                         for finger in fingers {
+                             let pts = finger.compactMap { joint -> CGPoint? in
+                                 guard let p = points[joint], p.confidence > 0.3 else { return nil }
+                                 return p.location
+                             }
+                             if !pts.isEmpty { handChains.append(pts) }
+                         }
+                    }
+                }
+            }
+            
