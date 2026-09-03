@@ -33,3 +33,18 @@ class CameraViewController: UIViewController {
             print("No front camera found")
             return
         }
+        
+        do {
+            let input = try AVCaptureDeviceInput(device: cameraDevice)
+            if let session = captureSession, session.canAddInput(input) {
+                session.addInput(input)
+                
+                previewLayer = AVCaptureVideoPreviewLayer(session: session)
+                previewLayer?.videoGravity = .resizeAspectFill
+                previewLayer?.frame = view.bounds
+                
+                if let layer = previewLayer {
+                    view.layer.addSublayer(layer)
+                }
+                
+                // Start running on a background thread to allow UI to load faster
