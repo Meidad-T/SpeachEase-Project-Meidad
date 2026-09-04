@@ -382,3 +382,163 @@ struct CameraRecordingSheet: View {
     
     // MARK: - Settings Menus
     var timerSelectionMenu: some View {
+        VStack(spacing: 0) {
+            ForEach(CountdownOption.allCases, id: \.self) { option in
+                Button {
+                    withAnimation {
+                        countdownDuration = option
+                        showTimerSelection = false
+                    }
+                } label: {
+                    HStack {
+                        Text(option.display)
+                            .fontWeight(countdownDuration == option ? .bold : .regular)
+                            .foregroundStyle(.primary)
+                        
+                        Spacer()
+                        
+                        if countdownDuration == option {
+                            Image(systemName: "checkmark")
+                                .foregroundStyle(.blue)
+                        }
+                    }
+                    .padding()
+                    .background(Color.primary.opacity(0.05))
+                }
+                
+                if option != CountdownOption.allCases.last {
+                    Divider()
+                }
+            }
+        }
+        .frame(width: 150)
+        .background(.ultraThinMaterial)
+        .clipShape(RoundedRectangle(cornerRadius: 16))
+        .shadow(radius: 10)
+    }
+    
+    var settingsMenu: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            // Header
+            if currentSettingsPage != .main {
+                Button {
+                    withAnimation {
+                        if currentSettingsPage == .themes {
+                            currentSettingsPage = .motion
+                        } else {
+                            currentSettingsPage = .main
+                        }
+                    }
+                } label: {
+                    HStack {
+                        Image(systemName: "chevron.left")
+                        Text("Back")
+                    }
+                    .font(.subheadline)
+                    .foregroundStyle(.primary)
+                }
+                .padding(.bottom, 10)
+            } else {
+                Text("Settings")
+                    .font(.headline)
+                    .foregroundStyle(.primary)
+                    .padding(.bottom, 10)
+            }
+            
+            Divider().padding(.bottom, 10)
+            
+            switch currentSettingsPage {
+            case .main:
+                VStack(spacing: 8) {
+                    settingsRow(title: "Motion Visualizers", icon: "hand.raised.fill", color: .purple) {
+                        currentSettingsPage = .motion
+                    }
+                    
+                    settingsRow(title: "Audio", icon: "mic.fill", color: .blue) {
+                        currentSettingsPage = .audio
+                    }
+                }
+                
+            case .motion:
+                VStack(alignment: .leading, spacing: 16) {
+                    Text("Motion Visualizers")
+                        .font(.headline)
+                    
+                    VStack(alignment: .leading, spacing: 8) {
+                        Toggle("Hand Lines", isOn: $cameraManager.showHandLines)
+                            .tint(Color("AccentColor"))
+                        Toggle("Body Lines", isOn: $cameraManager.showBodyLines)
+                            .tint(Color("AccentColor"))
+                        Toggle("Face Lines", isOn: $cameraManager.showFaceLines)
+                            .tint(Color("AccentColor"))
+                    }
+                    
+                    Divider()
+                    
+                    settingsRow(title: "Color Themes", icon: "paintpalette.fill", color: .pink) {
+                        currentSettingsPage = .themes
+                    }
+                }
+                
+            case .themes:
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("Choose Theme")
+                        .font(.headline)
+                    
+                    ScrollView {
+                        LazyVGrid(columns: [
+                            GridItem(.flexible()),
+                            GridItem(.flexible()),
+                            GridItem(.flexible())
+                        ], spacing: 12) {
+                            ForEach(CameraRecordingManager.CameraTheme.themes) { theme in
+                                Button {
+                                    withAnimation {
+                                        cameraManager.applyTheme(theme)
+                                    }
+                                } label: {
+                                    HStack(spacing: 0) {
+                                        Rectangle().fill(theme.hand)
+                                        Rectangle().fill(theme.body)
+                                        Rectangle().fill(theme.face)
+                                    }
+                                    .frame(height: 40)
+                                    .cornerRadius(8)
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 8)
+                                            .stroke(Color.primary.opacity(0.1), lineWidth: 1)
+                                    )
+                                }
+                                .buttonStyle(.plain)
+                            }
+                        }
+                        .padding(.vertical, 4)
+                    }
+                    .frame(maxHeight: 300)
+                }
+                
+            case .audio:
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("Audio Input")
+                        .font(.headline)
+                        .padding(.bottom, 4)
+                    
+                    Toggle("Enable Mic", isOn: $cameraManager.isAudioEnabled)
+                        .tint(Color("AccentColor"))
+                    
+                    Text("Disabling the mic will result in no speech transcript analysis.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+        }
+        .padding()
+        .background(.ultraThinMaterial)
+        .cornerRadius(24)
+        .frame(width: 320)
+        .padding(16)
+        .shadow(radius: 10)
+    }
+    
+    func settingsRow(title: String, icon: String, color: Color, action: @escaping () -> Void) -> some View {
+        Button(action: { withAnimation { action() } }) {
