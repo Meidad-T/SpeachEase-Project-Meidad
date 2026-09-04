@@ -46,3 +46,100 @@ struct CameraAnalysisResultView: View {
                 .padding(.bottom, 40)
             }
         }
+        .navigationTitle("Analysis Result")
+        .navigationBarTitleDisplayMode(.inline)
+    }
+    
+    func getFeedback(score: Double) -> String {
+        if score >= 90 { return "Excellent Body Language!" }
+        if score >= 70 { return "Good Job!" }
+        if score >= 50 { return "Getting There" }
+        return "Needs Improvement"
+    }
+}
+
+// MARK: - Components
+
+struct CameraResultsScoreHeader: View {
+    let score: Int
+    let feedback: String
+    @State private var animatedScore: Double = 0
+    
+    var body: some View {
+        VStack(spacing: 20) {
+            ZStack {
+                // Background Track
+                Circle()
+                    .stroke(Color.secondary.opacity(0.1), lineWidth: 20)
+                    .frame(width: 220, height: 220)
+                
+                // Ring (Reuse ActivityRing if available, else simple Circle)
+                // Assuming ActivityRing is available in the project context
+                ActivityRing(progress: animatedScore / 100, color: scoreColor(Int(animatedScore)))
+                    .frame(width: 220, height: 220)
+                
+                // Text
+                VStack(spacing: 4) {
+                    Text("\(Int(animatedScore))")
+                        .font(.system(size: 70, weight: .heavy, design: .rounded))
+                        .foregroundStyle(.primary)
+                    
+                    Text("Out of 100")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .textCase(.uppercase)
+                }
+            }
+            .padding(.top, 10)
+            
+            Text(feedback)
+                .font(.title3)
+                .fontWeight(.medium)
+                .foregroundStyle(.primary.opacity(0.9))
+                .multilineTextAlignment(.center)
+                .padding(.horizontal)
+                .transition(.move(edge: .bottom).combined(with: .opacity))
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.bottom, 20)
+        .onAppear {
+            withAnimation(.easeOut(duration: 1.5).delay(0.2)) {
+                animatedScore = Double(score)
+            }
+        }
+    }
+    
+    func scoreColor(_ score: Int) -> Color {
+        if score >= 90 { return .green }
+        if score >= 70 { return .cyan }
+        if score >= 50 { return .orange }
+        return .red
+    }
+}
+
+struct CameraResultsSummary: View {
+    let report: CameraBodyLanguageReport
+    var isLoading: Bool = false
+    
+    var body: some View {
+        GlassCard {
+            VStack(alignment: .leading, spacing: 16) {
+                HStack {
+                    Image(systemName: "sparkles")
+                        .foregroundStyle(Color.purple)
+                    
+                    Text("Analysis Summary")
+                        .font(.headline)
+                        .foregroundStyle(.primary)
+                    Spacer()
+                }
+                
+                if report.insights.isEmpty {
+                    Text("No significant insights found.")
+                        .font(.body)
+                        .foregroundStyle(.secondary)
+                } else {
+                    Text(report.insights.map { $0.description }.joined(separator: " "))
+                        .font(.body)
+                        .lineSpacing(4)
+                        .foregroundStyle(.secondary)
