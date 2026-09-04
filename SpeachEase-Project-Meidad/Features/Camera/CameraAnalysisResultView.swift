@@ -143,3 +143,63 @@ struct CameraResultsSummary: View {
                         .font(.body)
                         .lineSpacing(4)
                         .foregroundStyle(.secondary)
+                }
+            }
+        }
+    }
+}
+
+struct CameraResultsMetricsGrid: View {
+    let report: CameraBodyLanguageReport
+    
+    @State private var showCard1 = false
+    @State private var showCard2 = false
+    
+    var body: some View {
+        VStack(spacing: 16) {
+            HStack(spacing: 16) {
+                MetricCard(title: "Eye Contact", score: report.eyeContactScore, icon: "eye.fill", color: .cyan, delay: 0.0)
+                    .opacity(showCard1 ? 1 : 0)
+                    .offset(y: showCard1 ? 0 : 20)
+                
+                // Placeholder for other metric if available, for now just duplicated or empty slot
+                // Since report only has eyeContactScore explicitly breaking out, 
+                // but generated score includes gesture/movement. 
+                // Let's infer them roughly or just show Overall Score again as a placeholder/or just omit.
+                // Actually, I'll just show Eye Contact big for now, or maybe add a "Confidence" placeholder.
+                
+                MetricCard(title: "Overall", score: report.score, icon: "chart.bar.fill", color: .purple, delay: 0.1)
+                    .opacity(showCard2 ? 1 : 0)
+                    .offset(y: showCard2 ? 0 : 20)
+            }
+        }
+        .onAppear {
+            let spring = Animation.spring(response: 0.5, dampingFraction: 0.7)
+            withAnimation(spring.delay(0.0)) { showCard1 = true }
+            withAnimation(spring.delay(0.1)) { showCard2 = true }
+        }
+    }
+}
+
+struct CameraResultsInsightsList: View {
+    let userInsights: [SpeechInsight]
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text("Top Insights")
+                .font(.title3)
+                .fontWeight(.bold)
+                .foregroundStyle(.primary)
+                .padding(.horizontal)
+            
+            ForEach(Array(userInsights.enumerated()), id: \.element.id) { index, insight in
+                GlassCard {
+                    HStack(alignment: .top, spacing: 12) {
+                        Image(systemName: insight.type.icon)
+                            .foregroundStyle(insight.type.color)
+                            .font(.title3)
+                            .frame(width: 24)
+                        
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(insight.title)
+                                .font(.headline)
