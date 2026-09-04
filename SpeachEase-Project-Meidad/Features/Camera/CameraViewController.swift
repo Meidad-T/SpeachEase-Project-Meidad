@@ -274,3 +274,52 @@ class CameraRecordingViewController: UIViewController, AVCaptureFileOutputRecord
                 }
             }
             
+            // Faces
+            if let faceResults = faceLandmarksRequest.results {
+                for face in faceResults {
+                    if let landmarks = face.landmarks {
+                        let box = face.boundingBox
+                        
+                        func extract(region: VNFaceLandmarkRegion2D?) -> [CGPoint] {
+                            guard let r = region else { return [] }
+                            return r.normalizedPoints.map { p in
+                                CGPoint(
+                                    x: box.minX + (CGFloat(p.x) * box.width),
+                                    y: box.minY + (CGFloat(p.y) * box.height)
+                                )
+                            }
+                        }
+                        
+                        if let c = landmarks.faceContour { faceChains.append(.init(points: extract(region: c), isClosed: false)) }
+                        if let e = landmarks.leftEye { faceChains.append(.init(points: extract(region: e), isClosed: true)) }
+                        if let e = landmarks.rightEye { faceChains.append(.init(points: extract(region: e), isClosed: true)) }
+                        if let l = landmarks.outerLips { faceChains.append(.init(points: extract(region: l), isClosed: true)) }
+                    }
+                }
+            }
+            
+            let data = OverlayData(
+                bodyChains: bodyChains,
+                handChains: handChains,
+                faceChains: faceChains,
+                imageSize: size
+            )
+            
+            Task { @MainActor in
+                self.overlayView?.update(with: data)
+            }
+        } catch {
+            print("Vision failed: \(error)")
+        }
+    }
+    
+    // MARK: - Delegate
+    nonisolated func fileOutput(_ output: AVCaptureFileOutput, didFinishRecordingTo outputFileURL: URL, from connections: [AVCaptureConnection], error: Error?) {
+        Task { @MainActor in
+            if let error = error {
+                print("Error recording: \(error.localizedDescription)")
+            }
+            self.delegate?.didFinishRecording(url: outputFileURL)
+        }
+    }
+}
