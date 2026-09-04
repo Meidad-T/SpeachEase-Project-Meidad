@@ -203,3 +203,40 @@ struct CameraResultsInsightsList: View {
                         VStack(alignment: .leading, spacing: 4) {
                             Text(insight.title)
                                 .font(.headline)
+                                .foregroundStyle(.primary)
+                            Text(insight.description)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                }
+                .transition(.scale.combined(with: .opacity).animation(.spring().delay(Double(index) * 0.1)))
+            }
+        }
+    }
+}
+
+struct CameraResultsTranscript: View {
+    let transcript: String
+    
+    var body: some View {
+        GlassCard {
+            VStack(alignment: .leading, spacing: 12) {
+                HStack {
+                    Image(systemName: "quote.bubble.fill")
+                        .foregroundStyle(Color.blue)
+                    Text("Transcript")
+                        .font(.headline)
+                        .foregroundStyle(.primary)
+                    Spacer()
+                }
+                
+                Text(transcript.isEmpty ? "No speech detected." : transcript)
+                    .font(.body)
+                    .italic()
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+    }
+}
