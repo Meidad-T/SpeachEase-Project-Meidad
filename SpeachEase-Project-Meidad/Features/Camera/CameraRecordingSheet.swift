@@ -542,3 +542,100 @@ struct CameraRecordingSheet: View {
     
     func settingsRow(title: String, icon: String, color: Color, action: @escaping () -> Void) -> some View {
         Button(action: { withAnimation { action() } }) {
+            HStack {
+                Image(systemName: icon)
+                    .foregroundStyle(.white)
+                    .frame(width: 28, height: 28)
+                    .background(color)
+                    .clipShape(RoundedRectangle(cornerRadius: 6))
+                
+                Text(title)
+                    .foregroundStyle(.primary)
+                    .font(.subheadline)
+                    .fontWeight(.medium)
+                
+                Spacer()
+                
+                Image(systemName: "chevron.right")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            .padding(.vertical, 8)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+// MARK: - Slide Button Component
+// MARK: - Slide Button Component
+struct SlideToFinishButton: View {
+    var text: String
+    var action: () -> Void
+    
+    @State private var offset: CGFloat = 0
+    private let height: CGFloat = 60
+    private let buttonWidth: CGFloat = 300
+    
+    var body: some View {
+        ZStack(alignment: .leading) {
+            // Track Background
+            Capsule()
+                .fill(.ultraThinMaterial)
+                .overlay(Capsule().stroke(Color.white.opacity(0.1), lineWidth: 1))
+            
+            // Text
+            Text(text)
+                .font(.headline)
+                .foregroundStyle(Color.primary)
+                .frame(maxWidth: .infinity)
+                .opacity(offset > 10 ? 0 : 1)
+                .animation(.easeOut, value: offset)
+            
+            // Slider Knob
+            ZStack {
+                Circle()
+                    .fill(Color.white)
+                    .shadow(radius: 2)
+                
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 20, weight: .bold))
+                    .foregroundStyle(Color.black)
+            }
+            .frame(width: height - 8, height: height - 8)
+            .padding(.leading, 4)
+            .offset(x: offset)
+            .gesture(
+                DragGesture()
+                    .onChanged { value in
+                        if value.translation.width > 0 {
+                            let maxDrag = buttonWidth - height 
+                            offset = min(max(0, value.translation.width), maxDrag) 
+                        }
+                    }
+                    .onEnded { value in
+                        let maxDrag = buttonWidth - height
+                        if offset > (maxDrag * 0.8) {
+                            HapticManager.shared.notification(type: .success)
+                            action()
+                            withAnimation { offset = 0 }
+                        } else {
+                            withAnimation(.spring()) {
+                                offset = 0
+                            }
+                        }
+                    }
+            )
+        }
+        .frame(width: buttonWidth, height: height)
+        .clipShape(Capsule())
+    }
+}
+
+
+
+
+
+
+
+
