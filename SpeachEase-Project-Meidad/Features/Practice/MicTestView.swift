@@ -443,3 +443,82 @@ struct TranscriptionResultView: View {
             setupAudioPlayer()
         }
         .onDisappear {
+            stopAudio()
+        }
+    }
+    
+    // MARK: - Audio Logic
+    
+    private func setupAudioPlayer() {
+        guard let url = audioUrl else { return }
+        
+        do {
+            // Ensure session is set for playback
+            try AVAudioSession.sharedInstance().setCategory(.playback)
+            try AVAudioSession.sharedInstance().setActive(true)
+            
+            audioPlayer = try AVAudioPlayer(contentsOf: url)
+            audioPlayer?.prepareToPlay()
+            totalDuration = audioPlayer?.duration ?? 0
+            
+        } catch {
+            print("Audio player init failed: \(error)")
+        }
+    }
+    
+    private func togglePlayback() {
+        guard let player = audioPlayer else { return }
+        
+        if player.isPlaying {
+            player.pause()
+            isPlaying = false
+            stopTimer()
+        } else {
+            player.play()
+            isPlaying = true
+            startTimer()
+        }
+    }
+    
+    private func stopAudio() {
+        audioPlayer?.stop()
+        isPlaying = false
+        stopTimer()
+    }
+    
+    private func skip(_ seconds: TimeInterval) {
+        guard let player = audioPlayer else { return }
+        let newTime = player.currentTime + seconds
+        player.currentTime = max(0, min(newTime, player.duration))
+        currentTime = player.currentTime
+    }
+    
+    private func startTimer() {
+        stopTimer()
+        timer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { _ in
+            Task { @MainActor in
+                guard let player = self.audioPlayer else { return }
+                
+                if !player.isPlaying {
+                    self.isPlaying = false
+                    self.stopTimer()
+                }
+                
+                withAnimation(.linear(duration: 0.1)) {
+                    self.currentTime = player.currentTime
+                }
+            }
+        }
+    }
+    
+    private func stopTimer() {
+        timer?.invalidate()
+        timer = nil
+    }
+    
+    private func formatTime(_ time: TimeInterval) -> String {
+        let minutes = Int(time) / 60
+        let seconds = Int(time) % 60
+        return String(format: "%02d:%02d", minutes, seconds)
+    }
+}
