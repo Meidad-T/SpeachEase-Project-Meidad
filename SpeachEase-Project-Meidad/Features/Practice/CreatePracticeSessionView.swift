@@ -172,3 +172,75 @@ struct CreatePracticeSessionView: View {
                             
                             VStack(alignment: .leading, spacing: 4) {
                                 Text(focus.title)
+                                    .font(.headline)
+                                    .foregroundStyle(isSelected ? .white : .primary)
+                                
+                                Text(focus.subtitle)
+                                    .font(.caption)
+                                    .foregroundStyle(isSelected ? .white.opacity(0.8) : .secondary)
+                                    .lineLimit(2)
+                                    .fixedSize(horizontal: false, vertical: true)
+                            }
+                        }
+                        .padding()
+                        .frame(height: 160)
+                        .frame(maxWidth: .infinity, alignment: .leading) // Ensure card aligns content leading
+                        .background(isSelected ? focus.defaultColor : Color(UIColor.secondarySystemGroupedBackground))
+                        .cornerRadius(20)
+                        .scaleEffect(isSelected ? 1.05 : 1.0)
+                        .animation(.spring(), value: isSelected)
+                        .onTapGesture {
+                            withAnimation(.spring()) {
+                                viewModel.toggleFocus(focus)
+                            }
+                        }
+                    }
+                    
+                    // "All" Button (Moved to bottom)
+                    let isAllSelected = viewModel.selectedFoci.count == PracticeFocus.allCases.count
+                    
+                    Button(action: {
+                        withAnimation(.spring()) {
+                            viewModel.selectAllFoci()
+                        }
+                    }) {
+                        VStack(alignment: .leading) {
+                            HStack {
+                                ZStack {
+                                    Circle()
+                                        .fill(isAllSelected ? Color.white.opacity(0.2) : Color.gray.opacity(0.1))
+                                        .frame(width: 64, height: 64)
+                                    
+                                    Image(systemName: "square.grid.2x2.fill")
+                                        .font(.title)
+                                        .foregroundStyle(isAllSelected ? Color.white : Color.primary)
+                                }
+                                Spacer() // Forces icon to the left
+                            }
+                            
+                            Spacer()
+                            
+                            Text("All")
+                                .font(.headline)
+                                .foregroundStyle(isAllSelected ? Color.white : Color.primary)
+                            
+                            Text("Select everything")
+                                .font(.caption)
+                                .foregroundStyle(isAllSelected ? Color.white.opacity(0.8) : Color.secondary)
+                        }
+                        .padding()
+                        .frame(height: 160)
+                        .frame(maxWidth: .infinity, alignment: .leading) // Ensure card aligns content leading
+                        .background(isAllSelected ? Color(red: 0.988, green: 0.655, blue: 0.980) : Color(UIColor.secondarySystemGroupedBackground))
+                        .cornerRadius(20)
+                        .scaleEffect(isAllSelected ? 1.05 : 1.0)
+                    }
+                    .buttonStyle(.plain)
+                }
+                .padding()
+            }
+        }
+    }
+    
+    // MARK: - Step 3: Config
+    var configStep: some View {
