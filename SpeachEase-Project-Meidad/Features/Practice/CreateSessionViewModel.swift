@@ -24,3 +24,56 @@ class CreateSessionViewModel: ObservableObject {
             self.sessionName = session.name
             // Initialize with existing foci
             self.selectedFoci = Set(session.foci)
+            self.selectedColor = session.displayColor 
+            
+            if let limit = session.timeLimitMinutes {
+                self.timeLimitText = String(limit)
+            }
+            self.enforceTimeLimit = session.enforceTimeLimit
+            self.editingSessionId = session.id
+        } 
+    }
+    
+    // Validation
+    var isDetailsValid: Bool {
+        !sessionName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+    
+    var isFocusValid: Bool {
+        !selectedFoci.isEmpty
+    }
+    
+    var isConfigValid: Bool {
+        // If enforcement is on, text must be a valid number
+        if enforceTimeLimit {
+            return Int(timeLimitText) != nil
+        }
+        return true
+    }
+    
+    var canGoNext: Bool {
+        switch currentStep {
+        case .details: return isDetailsValid
+        case .focus: return isFocusValid
+        case .config: return isConfigValid
+        }
+    }
+    
+    // Focus Management
+    func toggleFocus(_ focus: PracticeFocus) {
+        if selectedFoci.contains(focus) {
+            selectedFoci.remove(focus)
+        } else {
+            selectedFoci.insert(focus)
+        }
+    }
+    
+    func selectAllFoci() {
+        if selectedFoci.count == PracticeFocus.allCases.count {
+            selectedFoci.removeAll()
+        } else {
+            selectedFoci = Set(PracticeFocus.allCases)
+        }
+    }
+    
+    func nextStep() {
