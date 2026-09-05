@@ -110,3 +110,23 @@ class CreateSessionViewModel: ObservableObject {
             foci: sortedFoci,
             timeLimitMinutes: limit,
             enforceTimeLimit: enforceTimeLimit,
+            customColor: color
+        )
+        
+        // Use existing ID if editing
+        if let id = editingSessionId {
+            newSession.id = id
+        }
+        
+        // Save logic to be handled by parent view or a DataStore
+        createdSession = newSession
+    }
+    
+    func randomizeColor() {
+        selectedColor = Color(
+            red: .random(in: 0...1),
+            green: .random(in: 0...1),
+            blue: .random(in: 0...1)
+        )
+    }
+}
