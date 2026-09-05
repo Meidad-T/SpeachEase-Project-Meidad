@@ -312,3 +312,134 @@ struct TranscriptionResultView: View {
                         } else {
                             // Success Content
                             VStack(alignment: .leading, spacing: 20) {
+                                
+                                // Highlighting Text View
+                                if let segments = speechManager.transcriptionResult?.segments, !segments.isEmpty {
+
+                                    FlowLayout(spacing: 6, lineSpacing: 12) {
+                                        ForEach(Array(segments.enumerated()), id: \.offset) { index, segment in
+                                            let isHighlighted = currentTime >= segment.timestamp && currentTime <= (segment.timestamp + segment.duration)
+                                            let isOverTime = timeLimit != nil && segment.timestamp > timeLimit!
+                                            
+                                            Text(segment.substring)
+                                                .font(.title2)
+                                                .fontWeight(isHighlighted ? .bold : .regular)
+                                                .foregroundColor(isHighlighted ? .purple : (isOverTime ? .red.opacity(0.5) : .primary.opacity(0.7)))
+                                                .scaleEffect(isHighlighted ? 1.1 : 1.0)
+                                                .animation(.spring(response: 0.3, dampingFraction: 0.6), value: isHighlighted)
+                                                .background(
+                                                    isHighlighted ?
+                                                    Capsule()
+                                                        .fill(Color.purple.opacity(0.1))
+                                                        .padding(-4)
+                                                    : nil
+                                                )
+                                                .zIndex(isHighlighted ? 1 : 0)
+                                                .id(index) // Needed for ScrollViewReader
+                                                .onTapGesture {
+                                                    audioPlayer?.currentTime = segment.timestamp
+                                                    currentTime = segment.timestamp
+                                                    if !isPlaying {
+                                                        togglePlayback()
+                                                    }
+                                                }
+                                        }
+                                    }
+                                    .padding(.vertical, 4)
+                                    .onChange(of: currentTime) { _, _ in
+                                        // Auto-scroll logic to keep active word visible/centered
+                                        if let activeIndex = segments.firstIndex(where: { currentTime >= $0.timestamp && currentTime <= ($0.timestamp + $0.duration) }) {
+                                            withAnimation {
+                                                proxy.scrollTo(activeIndex, anchor: UnitPoint(x: 0.5, y: 0.3))
+                                            }
+                                        }
+                                    }
+                                } else {
+                                    Text(speechManager.transcript.isEmpty ? "No speech detected in this file." : speechManager.transcript)
+                                        .font(.body)
+                                        .lineSpacing(6)
+                                        .foregroundColor(.primary)
+                                }
+                            }
+                            .padding()
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                        }
+                    }
+                } // End ScrollViewReader
+                .frame(maxHeight: .infinity)
+                .background(Color(uiColor: .secondarySystemBackground))
+                .cornerRadius(16)
+            }
+            
+            // Playback Controls
+            if !speechManager.isProcessing && speechManager.errorMessage == nil {
+                VStack(spacing: 12) {
+                    
+                    // Time Slider
+                    HStack {
+                        Text(formatTime(currentTime))
+                            .font(.caption)
+                            .monospacedDigit()
+                            .foregroundStyle(.secondary)
+                        
+                        Slider(value: Binding(get: {
+                            currentTime
+                        }, set: { newValue in
+                            currentTime = newValue
+                            audioPlayer?.currentTime = newValue
+                        }), in: 0...max(totalDuration, 0.1))
+                        
+                        Text(formatTime(totalDuration))
+                            .font(.caption)
+                            .monospacedDigit()
+                            .foregroundStyle(.secondary)
+                    }
+                    
+                    // Controls
+                    HStack(spacing: 40) {
+                        Button {
+                            skip(-5)
+                        } label: {
+                            Image(systemName: "gobackward.5")
+                                .font(.title)
+                        }
+                        
+                        Button {
+                            togglePlayback()
+                        } label: {
+                            Image(systemName: isPlaying ? "pause.circle.fill" : "play.circle.fill")
+                                .font(.system(size: 56))
+                                .symbolRenderingMode(.hierarchical)
+                                .foregroundStyle(Color("AccentColor"))
+                        }
+                        
+                        Button {
+                            skip(5)
+                        } label: {
+                            Image(systemName: "goforward.5")
+                                .font(.title)
+                        }
+                    }
+                    .foregroundColor(.primary)
+                }
+                .padding(.vertical, 8)
+                .padding(.horizontal)
+                .background(Color(uiColor: .systemBackground))
+            }
+            
+            // Cancel/Back logic handled by Navigation
+            // Or explicit Cancel if stuck
+            if speechManager.isProcessing {
+                Button("Cancel") {
+                    speechManager.cancelProcessing()
+                }
+                .buttonStyle(.bordered)
+            }
+        }
+        .padding()
+        .navigationTitle("Transcript")
+        .navigationBarTitleDisplayMode(.inline)
+        .onAppear {
+            setupAudioPlayer()
+        }
+        .onDisappear {
