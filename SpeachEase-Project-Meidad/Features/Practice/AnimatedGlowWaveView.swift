@@ -127,3 +127,57 @@ struct SingleWaveView: View {
             
             // LAYER 2: THE CORE & STROKE
             // Provides the definition
+            waveShape
+                .fill(
+                    LinearGradient(
+                        colors: [config.color.opacity(0.8), config.color.opacity(0.0)],
+                        startPoint: .bottom,
+                        endPoint: .top
+                    )
+                )
+                .blur(radius: 10)
+                .overlay(
+                    // White-hot crest
+                    waveShape
+                        .stroke(
+                            LinearGradient(
+                                colors: [.white.opacity(0.6), .clear],
+                                startPoint: .top,
+                                endPoint: .bottom
+                            ),
+                            lineWidth: 3
+                        )
+                        .blur(radius: 5)
+                )
+        }
+        .offset(x: offset)
+        .onAppear {
+            withAnimation(
+                .linear(duration: config.horizontalSpeed)
+                .repeatForever(autoreverses: false)
+            ) {
+                offset = -interval
+            }
+            randomizeWaveMotion()
+        }
+    }
+    
+    private func randomizeWaveMotion() {
+        let randomDuration = Double.random(in: 2.5...5.0)
+        
+        let newAmplitude = config.baseAmplitude + CGFloat.random(in: -config.amplitudeRange...config.amplitudeRange)
+        let newBaselineOffset = config.baseBaselineOffset + CGFloat.random(in: -config.baselineRange...config.baselineRange)
+        
+        withAnimation(.easeInOut(duration: randomDuration)) {
+            currentAmplitude = newAmplitude
+            currentBaselineOffset = newBaselineOffset
+        }
+        
+        DispatchQueue.main.asyncAfter(deadline: .now() + randomDuration * 0.9) {
+            randomizeWaveMotion()
+        }
+    }
+}
+
+// MARK: - Shape Logic
+struct SineWaveShape: Shape {
