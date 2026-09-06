@@ -238,3 +238,484 @@ struct PracticeSessionView: View {
             let uniqueName = "\(UUID().uuidString).\(ext)"
             
             guard let docDir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else { return }
+            let destUrl = docDir.appendingPathComponent(uniqueName)
+            
+            do {
+                if FileManager.default.fileExists(atPath: destUrl.path) {
+                    try FileManager.default.removeItem(at: destUrl)
+                }
+                
+                if url.startAccessingSecurityScopedResource() {
+                    defer { url.stopAccessingSecurityScopedResource() }
+                    try FileManager.default.copyItem(at: url, to: destUrl)
+                } else {
+                    try FileManager.default.copyItem(at: url, to: destUrl)
+                }
+                
+                DispatchQueue.main.async {
+                    session.recordingFileName = uniqueName
+                    session.speechReport = nil
+                    // onSave(session) // Removed to prevent potential list reload dismissal
+                    
+                    speechManager.transcribeAudioFile(url: destUrl)
+                    
+                    // Auto-Start Analysis once transcription is ready
+                    // We need to wait for transcription, which is async in manager
+                    // Since manager updates @Published, we can just set isAnalyzing=true and show UI
+                    // But we actually need the result.
+                    // Let's modify startAnalysis to check periodically or use the manager's published property in the view body to trigger.
+                    // Actually, simpler: just trigger startAnalysis() which waits for result?
+                    // No, startAnalysis() checks if result exists.
+                    
+                    // Better approach: Set a flag to auto-analyze when ready
+                    self.startAnalysis()
+                }
+            } catch {
+                print("Error: \(error)")
+            }
+            
+        case .failure(let error):
+            print("Import failed: \(error)")
+        }
+    }
+    
+    func startAnalysis() {
+        guard let _ = session.recordingFileName else { return }
+        
+        // 1. Start UI Flow
+        withAnimation {
+            isAnalyzing = true
+            // showTranscript = true // Removed: Show later for dramatic effect
+            analysisStatus = "Transcribing..."
+        }
+        
+        // Polling for transcription completion using Task (MainActor)
+        Task { @MainActor in
+            // Wait for processing to finish
+            while speechManager.isProcessing {
+                try? await Task.sleep(nanoseconds: 500_000_000) // 0.5s
+            }
+            
+            if let error = speechManager.errorMessage {
+                // System Error
+                handleError("Transcribtion failed: \(error)")
+            } else if let result = speechManager.transcriptionResult, 
+                      !result.formattedString.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                // Success
+                performAnalysis(transcript: result)
+            } else {
+                // No Words Detection
+                handleError("No words detected! Please select another file!")
+            }
+        }
+    }
+    
+    func handleError(_ message: String) {
+        withAnimation {
+            isAnalyzing = false
+            errorAlertMessage = message
+            showErrorAlert = true
+        }
+    }
+    
+    func performAnalysis(transcript: SFTranscription) {
+        // Ensure isAnalyzing is true again
+        isAnalyzing = true
+        analysisStatus = "Analyzing Speech..."
+        
+        Task {
+            guard let filename = session.recordingFileName,
+                  let docDir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else { return }
+            let fileUrl = docDir.appendingPathComponent(filename)
+            
+            let timeLimit = session.enforceTimeLimit ? Double(session.timeLimitMinutes ?? 0) * 60.0 : nil
+            
+            let analyzer = SpeechAnalyzer()
+            
+            // 1. Run Analysis
+            var report = await analyzer.analyze(
+                transcript: transcript,
+                audioFile: fileUrl,
+                timeLimit: timeLimit,
+                enforceStrict: session.enforceTimeLimit,
+                onProgress: { status in
+                    Task { @MainActor in
+                        self.analysisStatus = status
+                    }
+                }
+            )
+            
+            // 2. Video Analysis
+            if session.foci.contains(where: { $0.requiresVideo }) {
+                await MainActor.run { analysisStatus = "Analyzing Body Language..." }
+                let videoAnalyzer = BodyLanguageAnalyzer()
+                let videoReport = await videoAnalyzer.analyzeVideo(url: fileUrl)
+                
+                report.bodyLanguageScore = videoReport.score
+                report.eyeContactScore = videoReport.eyeContactScore
+                report.visualInsights = videoReport.insights
+                report.insights.append(contentsOf: videoReport.insights)
+                
+                let combinedScore = (Double(report.overallScore) * 0.6) + (videoReport.score * 0.4)
+                report.overallScore = Int(combinedScore)
+            }
+            
+            // 3. Complete & Animate Reveal
+            await MainActor.run {
+                session.speechReport = report
+                
+                // Save History
+                let newAttempt = PracticeAttempt(
+                    date: Date(),
+                    recordingFileName: filename,
+                    speechReport: report,
+                    confidenceScore: confidenceScore // Initialize with current default/adjusted score
+                )
+                session.history.append(newAttempt)
+                session.practiceLog.append(Date())
+                onSave(session)
+                
+                isAnalyzing = false
+                
+                // Close Sheet if present
+                if showVideoRecorder {
+                     showVideoRecorder = false
+                }
+                if showAudioRecorder {
+                    showAudioRecorder = false
+                }
+                
+                // TRIGGER HIDE of Input UI first
+                withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
+                    isResultMode = true
+                }
+                
+                // WAIT for hide animation to largely complete before showing results
+                // We use a task delay on main actor or just dispatch async
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                    
+                    // Sequence of Reveals
+                    withAnimation {
+                        showTranscript = true
+                    }
+                    
+                    // Staggered Reveal
+                    withAnimation(.spring().delay(0.2)) {
+                        showSummary = true
+                    }
+                    withAnimation(.spring().delay(0.6)) {
+                        showMetrics = true
+                    }
+                    withAnimation(.spring().delay(1.0)) {
+                        showScore = true
+                    }
+                }
+            }
+        }
+    }
+    
+    func resetAnalysisState() {
+        session.recordingFileName = nil
+        session.speechReport = nil
+        confidenceScore = 50 // Reset Confidence
+        showScore = false
+        showMetrics = false
+        showSummary = false
+        showTranscript = false
+        isResultMode = false // Reset mode
+        speechManager.reset()
+    }
+    
+    // MARK: - Subcomponents (Extracted for Compiler Performance)
+    
+    @ViewBuilder
+    private var startNewSessionView: some View {
+        if showRecordingChoice {
+            // Emulated Choice Screen logic from "else" block below
+            // This ensures we always start here if flag is set, regardless of file state
+            VStack(spacing: 20) {
+                // Welcome Header
+                HStack {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Ready to Practice?")
+                            .font(.headline)
+                            .foregroundStyle(.secondary)
+                        Text("Choose how you want to start")
+                            .font(.title2)
+                            .fontWeight(.bold)
+                            .foregroundStyle(.primary)
+                    }
+                    Spacer()
+                }
+                .padding(.bottom, 10)
+                
+                // 1. Primary Record Button
+                Button {
+                    // Reset existing state if they choose to record anew
+                    if session.recordingFileName != nil {
+                        resetAnalysisState()
+                    }
+                    
+                    if session.foci.contains(where: { $0.requiresVideo }) {
+                        showVideoRecorder = true
+                    } else {
+                        showAudioRecorder = true
+                    }
+                    showRecordingChoice = false // Exit choice mode once action taken
+                } label: {
+                    RecordLiveActionCard(
+                        session: session,
+                        requiresVideo: session.foci.contains(where: { $0.requiresVideo })
+                    )
+                }
+                .buttonStyle(.plain)
+                
+                // 2. Secondary Upload Button
+                Button {
+                    if session.recordingFileName != nil {
+                        resetAnalysisState()
+                    }
+                    isImporting = true
+                    showRecordingChoice = false
+                } label: {
+                    UploadActionCard()
+                }
+                .buttonStyle(.plain)
+                
+                // 3. Return to Previous Attempt (if exists)
+                if session.recordingFileName != nil {
+                    Button {
+                        withAnimation {
+                            showRecordingChoice = false
+                        }
+                    } label: {
+                        Text("Back to Selected File")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                    }
+                    .padding(.top, 10)
+                }
+            }
+            .padding(.top, 20)
+            
+        } else if let filename = session.recordingFileName {
+            // 1. File & Actions
+            VStack(spacing: 0) { // Zero spacing to let inner elements control it
+                if !isResultMode {
+                    FileStatusCard(
+                        filename: filename,
+                        isProcessing: speechManager.isProcessing,
+                        isReady: !speechManager.transcript.isEmpty,
+                        onReplace: {
+                            // Reset State on Replace
+                            resetAnalysisState()
+                            showRecordingChoice = true
+                        }
+                    )
+                    .disabled(isAnalyzing)
+                    .transition(.opacity.combined(with: .scale(scale: 0.95)))
+                    .padding(.bottom, 20) // Only pad when visible
+                }
+            }
+            
+            // 2. Inline Results Stack (Reverse Order)
+            LazyVStack(spacing: 15) { // Tighter spacing
+                // A. Score (Last to appear, at top)
+                if showScore, let report = session.speechReport {
+                    ResultsScoreHeader(score: report.overallScore, feedback: report.feedback)
+                        .transition(.move(edge: .top).combined(with: .opacity))
+                }
+                
+                // B. Metrics (Mid Reveal)
+                if showMetrics, let report = session.speechReport {
+                    ResultsMetricsGrid(report: report, foci: activeFoci)
+                        .transition(.scale.combined(with: .opacity))
+                    
+                    // C. Visual Insights (If available) - New Component
+                    if let insights = report.visualInsights, !insights.isEmpty {
+                        ResultsInsightsList(userInsights: insights)
+                            .transition(.move(edge: .bottom).combined(with: .opacity))
+                            .padding(.horizontal, 4) // Align with cards
+                    }
+                }
+                
+                // C. Summary (First Result Reveal)
+                if showSummary {
+                    ResultsAISummary(report: session.speechReport)
+                        .transition(.move(edge: .bottom).combined(with: .opacity))
+                }
+                
+                // D. Transcript (Always at bottom, visible first)
+                if showTranscript {
+                    TranscriptPreviewCard(
+                        text: speechManager.transcript,
+                        onViewFull: { showFullTranscript = true }
+                    )
+                        .transition(.move(edge: .bottom).combined(with: .opacity))
+                    
+                    // E. Progress Graph (New Feature)
+                    if !session.history.isEmpty {
+                        ProgressTrendGraph(
+                            history: session.history,
+                            currentScore: session.speechReport?.overallScore,
+                            currentConfidence: confidenceScore
+                        )
+                            .transition(.move(edge: .bottom).combined(with: .opacity))
+                            .padding(.bottom, 10)
+                    }
+                    
+                    // F. Confidence Rater (Moved to Bottom)
+                    ConfidenceRater(score: $confidenceScore)
+                        .transition(.scale.combined(with: .opacity))
+                        .padding(.bottom, 20) // Extra padding at very bottom
+                        .onChange(of: confidenceScore) { _, newValue in
+                            // Update history live
+                            if let lastIdx = session.history.indices.last {
+                                session.history[lastIdx].confidenceScore = newValue
+                                onSave(session)
+                            }
+                        }
+                }
+            }
+            .animation(.spring(response: 0.4, dampingFraction: 0.8), value: showScore) // Faster
+            .animation(.spring(response: 0.4, dampingFraction: 0.8), value: showMetrics)
+            .animation(.spring(response: 0.4, dampingFraction: 0.8), value: showSummary)
+            .animation(.spring(response: 0.4, dampingFraction: 0.8), value: showTranscript)
+            
+        } else {
+            // Empty State - Split Options
+            VStack(spacing: 20) {
+                // Welcome Header
+                HStack {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Ready to Practice?")
+                            .font(.headline)
+                            .foregroundStyle(.secondary)
+                        Text("Choose how you want to start")
+                            .font(.title2)
+                            .fontWeight(.bold)
+                            .foregroundStyle(.primary)
+                    }
+                    Spacer()
+                }
+                .padding(.bottom, 10)
+                
+                // 1. Primary Record Button
+                Button {
+                    if session.foci.contains(where: { $0.requiresVideo }) {
+                        showVideoRecorder = true
+                    } else {
+                        showAudioRecorder = true
+                    }
+                } label: {
+                    RecordLiveActionCard(
+                        session: session,
+                        requiresVideo: session.foci.contains(where: { $0.requiresVideo })
+                    )
+                }
+                .buttonStyle(.plain)
+                
+                // 2. Secondary Upload Button
+                Button {
+                    isImporting = true
+                } label: {
+                    UploadActionCard()
+                }
+                .buttonStyle(.plain)
+            }
+            .padding(.top, 20)
+        }
+    }
+    
+    @ViewBuilder
+    private var pastAttemptsList: some View {
+        PastAttemptsListView(
+            history: session.history.sorted(by: { $0.date > $1.date }),
+            onDelete: deleteAttempt
+        )
+    }
+}
+
+
+// MARK: - Subviews
+
+struct TranscriptPreviewCard: View {
+    let text: String
+    var onViewFull: () -> Void
+    
+    var body: some View {
+        GlassCard {
+            VStack(alignment: .leading, spacing: 12) {
+                Label("Transcript", systemImage: "quote.opening")
+                    .font(.headline)
+                    .foregroundStyle(.primary)
+                
+                Text(text.isEmpty ? "Transcribing..." : text)
+                    .font(.body)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(5)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                
+                if !text.isEmpty {
+                    Button(action: onViewFull) {
+                        HStack {
+                            Spacer()
+                            Text("View Full")
+                                .font(.caption)
+                                .fontWeight(.bold)
+                                .foregroundStyle(Color.cyan)
+                            Image(systemName: "arrow.up.left.and.arrow.down.right")
+                                .font(.caption)
+                                .foregroundStyle(.cyan)
+                        }
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+        }
+    }
+}
+
+struct FullTranscriptView: View {
+    let text: String
+    let audioUrl: URL?
+    let transcription: SFTranscription?
+    @Environment(\.dismiss) var dismiss
+    
+    // Audio State
+    @State private var audioPlayer: AVPlayer?
+    @State private var isPlaying: Bool = false
+    @State private var currentTime: TimeInterval = 0
+    @State private var totalDuration: TimeInterval = 0
+    @State private var timeObserver: Any?
+    
+    var body: some View {
+        NavigationStack {
+            ZStack {
+                MeshBackground()
+                
+                VStack(spacing: 0) {
+                    ScrollView {
+                        VStack(alignment: .leading, spacing: 20) {
+                            if let transcription = transcription, let _ = audioUrl {
+                                // Interactive Flow Layout
+                                FlowLayout(spacing: 6) {
+                                    ForEach(transcription.segments.indices, id: \.self) { index in
+                                        let segment = transcription.segments[index]
+                                        let isHighlighted = currentTime >= segment.timestamp && currentTime < (segment.timestamp + segment.duration)
+                                        
+                                        Text(segment.substring)
+                                            .font(.body)
+                                            .fontWeight(isHighlighted ? .bold : .regular)
+                                            .foregroundStyle(isHighlighted ? Color.accentColor : .primary) // Accent highlight
+                                            .padding(.horizontal, 2)
+                                            .padding(.vertical, 1)
+                                            .background(
+                                                isHighlighted ? Color.accentColor.opacity(0.1) : Color.clear
+                                            )
+                                            .cornerRadius(4)
+                                            .onTapGesture {
+                                                seek(to: segment.timestamp)
+                                            }
+                                    }
+                                }
