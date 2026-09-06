@@ -719,3 +719,303 @@ struct FullTranscriptView: View {
                                             }
                                     }
                                 }
+                            } else {
+                                // Static Text Fallback
+                                Text(text)
+                                    .font(.body)
+                                    .lineSpacing(6)
+                                    .foregroundStyle(.primary)
+                            }
+                        }
+                        .padding()
+                        .padding(.bottom, 100) // Spacer for validation
+                    }
+                    
+                    // Bottom Player Bar
+                    if let _ = audioUrl {
+                        VStack(spacing: 12) {
+                            HStack(spacing: 16) {
+                                Button(action: togglePlayback) {
+                                    Image(systemName: isPlaying ? "pause.circle.fill" : "play.circle.fill")
+                                        .font(.system(size: 44))
+                                        .foregroundStyle(Color.accentColor)
+                                        .shadow(color: Color.accentColor.opacity(0.3), radius: 10)
+                                }
+                                .buttonStyle(.plain)
+                                
+                                VStack(spacing: 4) {
+                                    Slider(value: Binding(
+                                        get: { currentTime },
+                                        set: { seek(to: $0) }
+                                    ), in: 0...totalDuration)
+                                    .tint(Color.accentColor)
+                                    
+                                    HStack {
+                                        Text(formatTime(currentTime))
+                                        Spacer()
+                                        Text(formatTime(totalDuration))
+                                    }
+                                    .font(.caption2)
+                                    .foregroundStyle(.secondary)
+                                }
+                            }
+                        }
+                        .padding()
+                        .background(.ultraThinMaterial)
+                        .cornerRadius(20, corners: [.topLeft, .topRight])
+                        .shadow(color: .black.opacity(0.1), radius: 10, x: 0, y: -5)
+                    }
+                }
+            }
+            .navigationTitle("Full Transcript")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Done") { 
+                        stopPlayer()
+                        dismiss() 
+                    }
+                }
+            }
+            .onAppear(perform: setupPlayer)
+            .onDisappear(perform: stopPlayer)
+        }
+    }
+    
+    // MARK: - Audio Logic
+    
+    func setupPlayer() {
+        guard let url = audioUrl else { return }
+        
+        // Ensure Audio Session is correct for playback
+        try? AVAudioSession.sharedInstance().setCategory(.playback, mode: .default)
+        try? AVAudioSession.sharedInstance().setActive(true)
+        
+        let playerItem = AVPlayerItem(url: url)
+        audioPlayer = AVPlayer(playerItem: playerItem)
+        
+        // Get duration safely
+        Task {
+            do {
+                if let duration = try await audioPlayer?.currentItem?.asset.load(.duration) {
+                    await MainActor.run {
+                        self.totalDuration = CMTimeGetSeconds(duration)
+                    }
+                }
+            } catch {
+                print("Failed to load duration: \(error)")
+            }
+        }
+        
+        // Periodic Time Observer
+        let interval = CMTime(seconds: 0.1, preferredTimescale: 600)
+        timeObserver = audioPlayer?.addPeriodicTimeObserver(forInterval: interval, queue: .main) { time in
+            self.currentTime = CMTimeGetSeconds(time)
+            self.isPlaying = self.audioPlayer?.timeControlStatus == .playing
+        }
+    }
+    
+    func togglePlayback() {
+        guard let player = audioPlayer else { return }
+        if player.timeControlStatus == .playing {
+            player.pause()
+            isPlaying = false
+        } else {
+            // Check if at end
+            if currentTime >= totalDuration - 0.5 {
+                seek(to: 0)
+            }
+            player.play()
+            isPlaying = true
+        }
+    }
+    
+    func stopPlayer() {
+        audioPlayer?.pause()
+        if let observer = timeObserver {
+            audioPlayer?.removeTimeObserver(observer)
+            timeObserver = nil
+        }
+        audioPlayer = nil
+        isPlaying = false
+    }
+    
+    func seek(to time: TimeInterval) {
+        let cmTime = CMTime(seconds: time, preferredTimescale: 600)
+        audioPlayer?.seek(to: cmTime)
+        currentTime = time
+    }
+    
+    func startPlaybackTask() {
+        // No longer needed with AVPlayer observer
+    }
+    
+    func formatTime(_ time: TimeInterval) -> String {
+        let minutes = Int(time) / 60
+        let seconds = Int(time) % 60
+        return String(format: "%02d:%02d", minutes, seconds)
+    }
+}
+
+// Helper for rounded corners
+extension View {
+    func cornerRadius(_ radius: CGFloat, corners: UIRectCorner) -> some View {
+        clipShape( RoundedCorner(radius: radius, corners: corners) )
+    }
+}
+
+struct RoundedCorner: Shape {
+    var radius: CGFloat = .infinity
+    var corners: UIRectCorner = .allCorners
+    
+    func path(in rect: CGRect) -> Path {
+        let path = UIBezierPath(roundedRect: rect, byRoundingCorners: corners, cornerRadii: CGSize(width: radius, height: radius))
+        return Path(path.cgPath)
+    }
+}
+
+struct TabButton: View {
+    let title: String
+    let icon: String
+    let isSelected: Bool
+    let action: () -> Void
+    
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 8) {
+                Image(systemName: icon)
+                Text(title)
+            }
+            .font(.headline)
+            .foregroundStyle(isSelected ? (Color(UIColor.systemBackground)) : .primary)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 12)
+            .background(isSelected ? .primary : Color.clear)
+            .cornerRadius(16)
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+struct PastAttemptsListView: View {
+    let history: [PracticeAttempt]
+    @State private var selectedAttempt: PracticeAttempt?
+    var onDelete: (PracticeAttempt) -> Void = { _ in }
+    
+    var body: some View {
+        VStack {
+            if history.isEmpty {
+                VStack(spacing: 16) {
+                    Image(systemName: "clock.arrow.circlepath")
+                        .font(.system(size: 40))
+                        .foregroundStyle(.white.opacity(0.3))
+                    Text("No past attempts yet")
+                        .foregroundStyle(.white.opacity(0.5))
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.top, 40)
+            } else {
+                ForEach(history) { attempt in
+                    Button {
+                        selectedAttempt = attempt
+                    } label: {
+                        GlassCard {
+                            HStack(spacing: 16) {
+                                // Mini Score Ring
+                                ZStack {
+                                    Circle()
+                                        .stroke(.secondary.opacity(0.2), lineWidth: 4)
+                                        .frame(width: 50, height: 50)
+                                    Circle()
+                                        .trim(from: 0, to: CGFloat(attempt.score) / 100)
+                                        .stroke(scoreColor(attempt.score), style: StrokeStyle(lineWidth: 4, lineCap: .round))
+                                        .rotationEffect(.degrees(-90))
+                                        .frame(width: 50, height: 50)
+                                        .shadow(color: scoreColor(attempt.score).opacity(0.5), radius: 5)
+                                    Text("\(attempt.score)")
+                                        .font(.system(size: 16, weight: .bold))
+                                        .foregroundStyle(.primary)
+                                }
+                                
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text(attempt.date.formatted(date: .abbreviated, time: .shortened))
+                                        .font(.headline)
+                                        .foregroundStyle(.primary)
+                                    Text(attempt.speechReport.feedback)
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                        .lineLimit(1)
+                                }
+                                
+                                Spacer()
+                                
+                                Image(systemName: "chevron.right")
+                                    .foregroundStyle(.secondary.opacity(0.3))
+                            }
+                        }
+                    }
+                    .buttonStyle(.plain)
+                    .contextMenu {
+                        Button(role: .destructive) {
+                            onDelete(attempt)
+                        } label: {
+                            Label("Delete Result", systemImage: "trash")
+                        }
+                    }
+                }
+            }
+        }
+        .navigationDestination(isPresented: Binding(
+            get: { selectedAttempt != nil },
+            set: { if !$0 { selectedAttempt = nil } }
+        )) {
+            if let attempt = selectedAttempt {
+                AnalysisResultView(report: attempt.speechReport)
+            }
+        }
+    }
+    
+    func scoreColor(_ score: Int) -> Color {
+        return score >= 90 ? .green : (score >= 70 ? .cyan : (score >= 50 ? .orange : .red))
+    }
+}
+
+struct FileStatusCard: View {
+    let filename: String
+    let isProcessing: Bool
+    let isReady: Bool
+    let onReplace: () -> Void
+    
+    var body: some View {
+        GlassCard {
+            HStack(spacing: 16) {
+                Image(systemName: "waveform.circle.fill")
+                    .font(.system(size: 50))
+                    .foregroundStyle(isProcessing ? AnyShapeStyle(Color.orange.gradient) : AnyShapeStyle(Color.cyan.gradient))
+                    .shadow(color: (isProcessing ? Color.orange : Color.cyan).opacity(0.4), radius: 8)
+                
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Selected File")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .textCase(.uppercase)
+                    
+                    Text(filename)
+                        .font(.headline)
+                        .foregroundStyle(.primary)
+                        .lineLimit(1)
+                        .truncationMode(.middle)
+                    
+                    if isProcessing {
+                        Text("Processing...")
+                            .font(.caption2)
+                            .foregroundStyle(.orange)
+                    } else if isReady {
+                        Text("Ready")
+                            .font(.caption2)
+                            .foregroundStyle(.green)
+                    }
+                }
+                
+                Spacer()
+                
