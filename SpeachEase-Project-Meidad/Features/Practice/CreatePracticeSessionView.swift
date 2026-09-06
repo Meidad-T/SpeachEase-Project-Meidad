@@ -244,3 +244,47 @@ struct CreatePracticeSessionView: View {
     
     // MARK: - Step 3: Config
     var configStep: some View {
+        VStack(spacing: 24) {
+            Text("Session Configuration")
+                .font(.title2)
+                .fontWeight(.bold)
+                .padding(.top)
+            
+            VStack(alignment: .leading, spacing: 12) {
+                Text("Time Limit (Minutes)")
+                    .font(.headline)
+                
+                TextField("e.g. 10", text: $viewModel.timeLimitText)
+                    .keyboardType(.numberPad)
+                    .padding()
+                    .background(Color.white)
+                    .cornerRadius(12)
+                    .onChange(of: viewModel.timeLimitText) { _, newValue in
+                        let filtered = newValue.filter { "0123456789".contains($0) }
+                        if filtered != newValue {
+                            viewModel.timeLimitText = filtered
+                        }
+                    }
+                
+                Toggle(isOn: $viewModel.enforceTimeLimit) {
+                    VStack(alignment: .leading) {
+                        Text("Enforce time limit?")
+                            .font(.body)
+                            .fontWeight(.medium)
+                        Text("Your practice sessions will be timed to ensure you don't exceed the time limit you set")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                }
+                .padding()
+                .background(Color.white)
+                .cornerRadius(12)
+                .tint(viewModel.selectedColor)
+            }
+            .padding()
+            
+            Spacer()
+        }
+    }
+}
