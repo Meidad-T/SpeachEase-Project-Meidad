@@ -1019,3 +1019,184 @@ struct FileStatusCard: View {
                 
                 Spacer()
                 
+                Button(action: onReplace) {
+                    Image(systemName: "arrow.triangle.2.circlepath")
+                        .font(.title3)
+                        .foregroundStyle(.primary)
+                        .padding(8)
+                        .background(.primary.opacity(0.1))
+                        .clipShape(Circle())
+                }
+            }
+        }
+    }
+}
+
+struct RecordLiveActionCard: View {
+    let session: PracticeSession
+    let requiresVideo: Bool
+    @State private var animate = false
+    
+    // Quick sizing helper
+    private var isIPad: Bool {
+        UIDevice.current.userInterfaceIdiom == .pad
+    }
+    
+    var body: some View {
+        ZStack(alignment: .bottom) {
+            // Background - Dark base
+            RoundedRectangle(cornerRadius: isIPad ? 30 : 20)
+                .fill(.black)
+            
+            // The Animated Wavy Glow Effect - ONLY in lower 1/4th
+            VStack {
+                Spacer()
+                AnimatedGlowWaveView()
+                    .frame(height: isIPad ? 60 : 45) // Only lower 1/4th of 240/180
+                    .opacity(0.9) // Strong but not overpowering
+            }
+            .clipShape(RoundedRectangle(cornerRadius: isIPad ? 30 : 20))
+            
+            // Subtle gradient overlay to blend with content
+            RoundedRectangle(cornerRadius: isIPad ? 30 : 20)
+                .fill(
+                    LinearGradient(
+                        colors: [
+                            Color(red: 1.0, green: 0.5, blue: 0.0).opacity(0.3),
+                            .clear
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+            
+            // Texture / Decoration: Large Faded Icon
+            GeometryReader { geo in
+                HStack {
+                    Spacer()
+                    Image(systemName: requiresVideo ? "figure.stand" : "mic.fill")
+                        .font(.system(size: isIPad ? 250 : 160))
+                        .foregroundStyle(.white)
+                        .opacity(0.12)
+                        .offset(x: isIPad ? 40 : 20, y: isIPad ? 20 : 10)
+                        .scaleEffect(animate ? 1.05 : 1.0)
+                        .animation(.easeInOut(duration: 3).repeatForever(autoreverses: true), value: animate)
+                }
+            }
+            .clipShape(RoundedRectangle(cornerRadius: isIPad ? 30 : 20))
+            
+            // Content
+            HStack {
+                VStack(alignment: .leading, spacing: isIPad ? 10 : 4) {
+                    // Icon + Label Pill
+                    HStack(spacing: 8) {
+                        Image(systemName: requiresVideo ? "video.fill" : "mic.fill")
+                            .font(isIPad ? .headline : .subheadline)
+                        Text(requiresVideo ? "Camera Mode" : "Microphone Mode")
+                            .font(isIPad ? .subheadline : .caption)
+                            .fontWeight(.semibold)
+                    }
+                    .padding(.horizontal, isIPad ? 12 : 10)
+                    .padding(.vertical, isIPad ? 6 : 4)
+                    .background(.white.opacity(0.25), in: Capsule())
+                    .foregroundStyle(.white)
+                    
+                    Text("Record Live")
+                        .font(.system(size: isIPad ? 36 : 28, weight: .bold))
+                        .foregroundStyle(.white)
+                        .shadow(color: .black.opacity(0.3), radius: 3)
+                    
+                    Text(requiresVideo ? "Analyze body language & speech" : "Analyze vocal tone & clarity")
+                        .font(isIPad ? .title3 : .subheadline)
+                        .fontWeight(.medium)
+                        .foregroundStyle(.white.opacity(0.95))
+                        .shadow(color: .black.opacity(0.2), radius: 2)
+                        .padding(.top, isIPad ? 4 : 2)
+                    
+                    Spacer()
+                    
+                    // CTA
+                    HStack {
+                        Text("Start Session")
+                            .fontWeight(.bold)
+                        Image(systemName: "arrow.right")
+                    }
+                    .font(isIPad ? .title3 : .headline)
+                    .foregroundStyle(.black)
+                    .padding(.horizontal, isIPad ? 24 : 16)
+                    .padding(.vertical, isIPad ? 14 : 10)
+                    .background(
+                        Capsule()
+                            .fill(.white)
+                            .shadow(color: Color(red: 1.0, green: 0.7, blue: 0.2).opacity(0.5), radius: 8, x: 0, y: 2)
+                    )
+                    .padding(.bottom, isIPad ? 0 : 5)
+                }
+                .padding(isIPad ? 30 : 20)
+                
+                Spacer()
+            }
+        }
+        .frame(height: isIPad ? 240 : 180) // Original size maintained!
+        .shadow(color: Color(red: 1.0, green: 0.6, blue: 0.1).opacity(0.5), radius: isIPad ? 20 : 15, y: isIPad ? 10 : 6)
+        .onAppear {
+            animate = true
+        }
+    }
+}
+
+struct UploadActionCard: View {
+    private var isIPad: Bool {
+        UIDevice.current.userInterfaceIdiom == .pad
+    }
+    
+    var body: some View {
+        ZStack {
+            // Background
+            RoundedRectangle(cornerRadius: isIPad ? 24 : 16)
+                .fill(.ultraThinMaterial)
+                .overlay(
+                    RoundedRectangle(cornerRadius: isIPad ? 24 : 16)
+                        .strokeBorder(.tertiary.opacity(0.5), lineWidth: 1.5)
+                )
+            
+            // Texture
+            GeometryReader { geo in
+                HStack {
+                    Spacer()
+                    Image(systemName: "square.and.arrow.up.fill")
+                        .font(.system(size: isIPad ? 140 : 100))
+                        .foregroundStyle(.secondary)
+                        .opacity(0.05)
+                        .offset(x: isIPad ? 30 : 10, y: isIPad ? 30 : 10)
+                }
+            }
+            .clipShape(RoundedRectangle(cornerRadius: isIPad ? 24 : 16))
+            
+            // Content
+            HStack {
+                VStack(alignment: .leading, spacing: isIPad ? 6 : 4) {
+                    Text("Upload Existing")
+                        .font(isIPad ? .title3 : .headline)
+                        .fontWeight(.bold)
+                        .foregroundStyle(.primary)
+                    
+                    Text("Import a file from your library")
+                        .font(isIPad ? .body : .caption)
+                        .foregroundStyle(.secondary)
+                }
+                
+                Spacer()
+                
+                Image(systemName: "folder.fill")
+                    .font(isIPad ? .title : .title3)
+                    .foregroundStyle(.secondary)
+                    .padding(isIPad ? 16 : 10)
+                    .background(.secondary.opacity(0.1), in: Circle())
+            }
+            .padding(isIPad ? 30 : 20)
+        }
+        .frame(height: isIPad ? 120 : 80) // Substantial but smaller
+    }
+}
+
