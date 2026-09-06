@@ -181,3 +181,36 @@ struct SingleWaveView: View {
 
 // MARK: - Shape Logic
 struct SineWaveShape: Shape {
+    var interval: CGFloat
+    var amplitude: CGFloat
+    var baseline: CGFloat
+    
+    var animatableData: AnimatablePair<CGFloat, CGFloat> {
+        get { AnimatablePair(amplitude, baseline) }
+        set {
+            amplitude = newValue.first
+            baseline = newValue.second
+        }
+    }
+
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+        path.move(to: CGPoint(x: 0, y: baseline))
+        
+        for i in 0...3 {
+            drawWaveCycle(to: &path, startX: interval * CGFloat(i))
+        }
+        
+        path.addLine(to: CGPoint(x: interval * 4, y: rect.height))
+        path.addLine(to: CGPoint(x: 0, y: rect.height))
+        path.closeSubpath()
+        return path
+    }
+    
+    private func drawWaveCycle(to path: inout Path, startX: CGFloat) {
+        let endX = startX + interval
+        let cp1 = CGPoint(x: startX + (interval * 0.35), y: baseline - amplitude)
+        let cp2 = CGPoint(x: startX + (interval * 0.65), y: baseline + amplitude)
+        path.addCurve(to: CGPoint(x: endX, y: baseline), control1: cp1, control2: cp2)
+    }
+}
