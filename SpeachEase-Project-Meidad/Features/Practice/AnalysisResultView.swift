@@ -54,3 +54,14 @@ struct AnalysisResultView: View {
                             ResultsInsightsList(userInsights: report.insights)
                                 .padding(.bottom, 40)
                         }
+                        .transition(.move(edge: .bottom).combined(with: .opacity))
+                    }
+                }
+                .animation(.spring(response: 0.6, dampingFraction: 0.8), value: isLoading)
+                .padding(.bottom, 40)
+            }
+        }
+        .navigationBarTitleDisplayMode(.inline)
+    }
+}
+
