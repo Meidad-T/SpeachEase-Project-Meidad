@@ -66,3 +66,31 @@ struct AnalyzingView: View {
                         .frame(width: 150, height: 150)
                         .scaleEffect(scale)
                         .opacity(2 - scale)
+                        .animation(
+                            Animation.easeOut(duration: 2).delay(0.5)
+                                .repeatForever(autoreverses: false),
+                            value: scale
+                        )
+                    
+                    Image(systemName: "waveform.path")
+                        .font(.system(size: 50))
+                        .foregroundStyle(
+                            LinearGradient(colors: [.blue, .purple], startPoint: .topLeading, endPoint: .bottomTrailing)
+                        )
+                }
+                
+                // Typewriter Text
+                VStack(spacing: 12) {
+                    Text("ANALYZING")
+                        .font(.caption)
+                        .fontWeight(.bold)
+                        .tracking(4)
+                        .foregroundStyle(.gray)
+                    
+                    Text(statusMessage.isEmpty ? steps[currentStepIndex] : statusMessage)
+                        .font(.title2)
+                        .fontWeight(.medium)
+                        .foregroundStyle(.white)
+                        .multilineTextAlignment(.center)
+                        // Typewriter logic handled by parent passing different strings, 
+                        // or we auto-cycle if parent provides a generic "Analyzing..."
