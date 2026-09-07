@@ -38,3 +38,19 @@ struct AnalysisResultView: View {
                                 }
                                 .font(.subheadline)
                                 .foregroundStyle(Color.cyan)
+                                .padding(.top, 8)
+                            }
+                            .buttonStyle(.plain)
+                            .padding(.horizontal)
+                        }
+                    }
+                    
+                    // 3. Metrics & Insights
+                    if !isLoading {
+                        VStack(spacing: 30) {
+                            ResultsMetricsGrid(report: report)
+                                .padding(.horizontal)
+                            
+                            ResultsInsightsList(userInsights: report.insights)
+                                .padding(.bottom, 40)
+                        }
