@@ -20,3 +20,49 @@ struct AnalyzingView: View {
         "Finalizing Report..."
     ]
     
+    var body: some View {
+        ZStack {
+            // Background Animation
+            Color.black.opacity(0.9).ignoresSafeArea()
+            
+            // Faint Grid/Nodes Background
+            GeometryReader { geo in
+                ZStack {
+                    ForEach(0..<20) { i in
+                        Circle()
+                            .fill(Color.blue.opacity(0.1))
+                            .frame(width: CGFloat.random(in: 20...100))
+                            .position(
+                                x: CGFloat.random(in: 0...geo.size.width),
+                                y: CGFloat.random(in: 0...geo.size.height)
+                            )
+                            .blur(radius: 10)
+                            .animation(
+                                Animation.easeInOut(duration: Double.random(in: 2...4))
+                                    .repeatForever(autoreverses: true),
+                                value: scale
+                            )
+                    }
+                }
+            }
+            .onAppear { scale = 1.2 }
+            
+            VStack(spacing: 40) {
+                // Central "Brain" / Pulse
+                ZStack {
+                    Circle()
+                        .stroke(Color.blue.opacity(0.3), lineWidth: 1)
+                        .frame(width: 150, height: 150)
+                        .scaleEffect(scale)
+                        .opacity(2 - scale)
+                        .animation(
+                            Animation.easeOut(duration: 2)
+                                .repeatForever(autoreverses: false),
+                            value: scale
+                        )
+                    
+                    Circle()
+                        .stroke(Color.purple.opacity(0.3), lineWidth: 1)
+                        .frame(width: 150, height: 150)
+                        .scaleEffect(scale)
+                        .opacity(2 - scale)
