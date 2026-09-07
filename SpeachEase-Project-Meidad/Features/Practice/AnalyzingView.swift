@@ -94,3 +94,21 @@ struct AnalyzingView: View {
                         .multilineTextAlignment(.center)
                         // Typewriter logic handled by parent passing different strings, 
                         // or we auto-cycle if parent provides a generic "Analyzing..."
+                        .transition(.opacity)
+                        .id(statusMessage + String(currentStepIndex)) // Force redraw for transition
+                }
+                .frame(height: 80) // Fixed height to prevent jumping
+                
+            }
+        }
+        .onReceive(Timer.publish(every: 0.8, on: .main, in: .common).autoconnect()) { _ in
+            if currentStepIndex < steps.count - 1 {
+                // Only auto-cycle if the parent isn't overriding with specific messages
+                // But for now, let's just cycle for visual flavor
+                withAnimation {
+                    currentStepIndex = (currentStepIndex + 1) % steps.count
+                }
+            }
+        }
+    }
+}
