@@ -111,3 +111,50 @@ struct LiveSessionView: View {
                         // C. Mic Toggle
                         Button {
                             isMicEnabled.toggle()
+                        } label: {
+                            Image(systemName: isMicEnabled ? "mic.fill" : "mic.slash.fill")
+                                .font(.system(size: 24, weight: .semibold))
+                                .frame(width: buttonSize, height: buttonSize)
+                                .glassEffect()
+                                .contentTransition(.symbolEffect(.replace))
+                        }
+                        
+                        // D. Finish (Checkmark)
+                        Button {
+                            finishSession()
+                        } label: {
+                            Image(systemName: "checkmark")
+                                .font(.system(size: 26, weight: .bold))
+                                .frame(width: buttonSize, height: buttonSize)
+                                .glassEffect(
+                                    tint: .accentColor
+                                )
+                        }
+                    }
+                    .foregroundStyle(.white)
+                    .padding(.vertical, 30)
+                    .padding(.bottom, 10)
+                }
+                .background(Color.clear)
+            }
+        }
+        .onAppear {
+            recorder.prepare()
+            recorder.startRecording()
+        }
+        .onDisappear {
+            _ = recorder.stopRecording()
+        }
+    }
+    
+    // MARK: - Helpers
+    func finishSession() {
+        if let url = recorder.stopRecording() {
+            onFinish(.success(url))
+        }
+    }
+    
+    func formatTime(_ time: TimeInterval) -> String {
+        let minutes = Int(time) / 60
+        let seconds = Int(time) % 60
+        return String(format: "%02d:%02d", minutes, seconds)
