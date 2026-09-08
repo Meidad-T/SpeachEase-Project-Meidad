@@ -158,3 +158,32 @@ struct LiveSessionView: View {
         let minutes = Int(time) / 60
         let seconds = Int(time) % 60
         return String(format: "%02d:%02d", minutes, seconds)
+    }
+}
+
+// MARK: - Liquid Glass Extension
+extension View {
+    func glassEffect(tint: Color = .white.opacity(0.1)) -> some View {
+        self
+            .background {
+                ZStack {
+                    // The "Icy" Material Base
+                    Circle()
+                        .fill(.ultraThinMaterial)
+                        .environment(\.colorScheme, .dark)
+                    
+                    // The Tint Layer
+                    Circle()
+                        .fill(tint)
+                }
+            }
+            // Inner rim lighting
+            .overlay(
+                Circle()
+                    .stroke(.white.opacity(0.3), lineWidth: 1)
+                    .blendMode(.overlay)
+            )
+            // Soft drop shadow
+            .shadow(color: .black.opacity(0.25), radius: 10, x: 0, y: 5)
+    }
+}
