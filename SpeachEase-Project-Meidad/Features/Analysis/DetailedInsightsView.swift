@@ -35,3 +35,18 @@ struct DetailedInsightsView: View {
                                 Text(formatTime(insight.timestamp))
                                     .font(isPad ? .body : .caption)
                                     .monospacedDigit()
+                            }
+                            .foregroundStyle(.secondary.opacity(0.8))
+                            .padding(.top, 4)
+                        }
+                    }
+                    .padding(isPad ? 24 : 16)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(Color.adaptiveCardBackground)
+                    .cornerRadius(isPad ? 24 : 16)
+                    .shadow(color: .black.opacity(0.05), radius: 5)
+                }
+            }
+            .padding()
+        }
+        .background(Color(UIColor.systemGroupedBackground))
