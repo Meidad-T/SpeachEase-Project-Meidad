@@ -61,3 +61,131 @@ struct ExploreContent: View {
                                         .background(filter == "All" ? Color.blue : Color.blue.opacity(0.1))
                                         .foregroundStyle(filter == "All" ? .white : .blue)
                                         .clipShape(Capsule())
+                                }
+                            }
+                            .padding(.horizontal)
+                        }
+                        
+                        // Bento Grid
+                        Grid(horizontalSpacing: 12, verticalSpacing: 12) {
+                            
+                            // Row 1
+                            GridRow {
+                                NavigationLink(destination: SectionDetailView(focus: .vocal)) {
+                                    BentoItem(
+                                        id: "vocal",
+                                        title: "Vocal Control",
+                                        subtitle: "Pitch & Tone",
+                                        icon: "mic.fill",
+                                        color: .green,
+                                        size: .square
+                                    )
+                                }
+                                .buttonStyle(.plain)
+                                
+                                NavigationLink(destination: SectionDetailView(focus: .body)) {
+                                    BentoItem(
+                                        id: "body",
+                                        title: "Body Language",
+                                        subtitle: "Posture & Gestures",
+                                        icon: "figure.stand",
+                                        color: .blue,
+                                        size: .wide
+                                    )
+                                }
+                                .buttonStyle(.plain)
+                                .gridCellColumns(2)
+                            }
+                            
+                            // Row 2
+                            GridRow {
+                                NavigationLink(destination: SectionDetailView(focus: .interview)) {
+                                    BentoItem(
+                                        id: "interview",
+                                        title: "Interview Prep",
+                                        subtitle: "Q&A Strategies",
+                                        icon: "briefcase.fill",
+                                        color: .orange,
+                                        size: .wide
+                                    )
+                                }
+                                .buttonStyle(.plain)
+                                .gridCellColumns(2)
+                                
+                                NavigationLink(destination: SectionDetailView(focus: .pacing)) {
+                                    BentoItem(
+                                        id: "pacing",
+                                        title: "Pacing",
+                                        subtitle: "Speed & Pauses",
+                                        icon: "speedometer",
+                                        color: .pink,
+                                        size: .square
+                                    )
+                                }
+                                .buttonStyle(.plain)
+                            }
+                            
+                            // Row 3
+                            GridRow {
+                                NavigationLink(destination: SectionDetailView(focus: .facial)) {
+                                    BentoItem(
+                                        id: "facial",
+                                        title: "Facial Aesthetics",
+                                        subtitle: "Expressions",
+                                        icon: "mouth",
+                                        color: .purple,
+                                        size: .square
+                                    )
+                                }
+                                .buttonStyle(.plain)
+                                
+                                NavigationLink(destination: SectionDetailView(focus: .vocab)) {
+                                    BentoItem(
+                                        id: "vocab",
+                                        title: "Vocabulary",
+                                        subtitle: "Word Choice",
+                                        icon: "text.book.closed.fill",
+                                        color: .yellow,
+                                        size: .square
+                                    )
+                                }
+                                .buttonStyle(.plain)
+                                
+                                NavigationLink(destination: SectionDetailView(focus: .eye)) {
+                                    BentoItem(
+                                        id: "eye",
+                                        title: "Eye Contact",
+                                        subtitle: "Engagement",
+                                        icon: "eye.fill",
+                                        color: .teal,
+                                        size: .square
+                                    )
+                                }
+                                .buttonStyle(.plain)
+                            }
+                        }
+                        .padding(.horizontal)
+                        
+                        // Achievements / Crowns Row (4 top, 3 bottom)
+                        VStack(alignment: .leading, spacing: 20) {
+                            Text("Achievements")
+                                .font(.title) // Even Larger (was title2)
+                                .fontWeight(.bold)
+                                .foregroundStyle(.primary)
+                                .padding(.horizontal)
+                                .padding(.top, 12) // Moved lower slightly
+                            
+                            // Layout Logic:
+                            // iPhone (Compact): Adaptive Grid (Responsive)
+                            // iPad (Regular): Custom VStack/HStack to achieve "Offset/Honeycomb" look (4 then 3)
+                            if sizeClass == .compact {
+                                LazyVGrid(columns: [GridItem(.adaptive(minimum: 85), spacing: 10)], spacing: 30) {
+                                    ForEach(PracticeFocus.allCases, id: \.self) { focus in
+                                        AchievementCrownView(focus: focus, learningManager: learningManager)
+                                    }
+                                }
+                                .padding(.horizontal, 20)
+                                .padding(.bottom, 60)
+                            } else {
+                                // iPad Layout with Equal Sizing
+                                GeometryReader { geo in
