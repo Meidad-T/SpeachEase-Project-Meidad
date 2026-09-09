@@ -349,3 +349,65 @@ struct SessionCard: View {
                             // Check if multiple
                             if session.foci.count > 1 {
                                 Text("Mixed (\(session.foci.count))")
+                                    .font(.caption2)
+                                    .fontWeight(.medium)
+                                    .lineLimit(1)
+                            } else {
+                                Text(primaryFocus.title)
+                                    .font(.caption2)
+                                    .fontWeight(.medium)
+                                    .lineLimit(1)
+                            }
+                        }
+                        
+                        // Time Label
+                        if let limit = session.timeLimitMinutes {
+                            HStack(spacing: 4) {
+                                Image(systemName: "timer")
+                                    .font(.caption2)
+                                Text("\(limit) min")
+                                    .font(.caption2)
+                                    .fontWeight(.medium)
+                            }
+                        }
+                    }
+                    .foregroundColor(.white.opacity(0.9))
+                    
+                    // Creation Date
+                    if let date = session.createdDate {
+                        Text("Created " + date.formatted(date: .abbreviated, time: .omitted))
+                            .font(.caption)
+                            .foregroundColor(.white.opacity(0.7))
+                    }
+                    
+                    if session.enforceTimeLimit {
+                        Text("Strict Mode")
+                            .font(.caption2)
+                            .italic()
+                            .foregroundColor(.white.opacity(0.7))
+                    }
+                }
+                
+                Spacer()
+                
+                Image(systemName: "chevron.right")
+                    .foregroundColor(.white.opacity(0.5))
+                    .padding(.trailing)
+            }
+            .padding()
+        }
+        .frame(height: isIPad ? 200 : 100)
+        .background(
+            ZStack {
+                session.displayColor
+                LinearGradient(
+                    colors: [.black.opacity(0), .black.opacity(0.2)],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+            }
+        )
+        .cornerRadius(24) // Slightly rounder corners for larger cards
+        .shadow(color: session.displayColor.opacity(0.3), radius: 8, x: 0, y: 4)
+    }
+}
