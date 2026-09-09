@@ -783,3 +783,142 @@ struct OrganicGradient: View {
         case 2: return (maxOff, maxOff)
         case 3: return (maxOff, -maxOff)
         case 0: return (-maxOff, maxOff)
+        default: return (0,0)
+        }
+    }
+}
+
+struct SettingsSheet: View {
+    @ObservedObject var profileManager = UserProfileManager.shared
+    @Environment(\.dismiss) var dismiss
+    @State private var showEditProfile = false
+    
+    // Reset State
+    @State private var showResetAlert = false
+    @State private var deleteConfirmationText = ""
+    
+    var body: some View {
+        NavigationStack {
+            List {
+                Section {
+                    Button {
+                        showEditProfile = true
+                    } label: {
+                        Label("Edit Profile", systemImage: "pencil")
+                    }
+                    
+                    NavigationLink {
+                        Text("Notifications Settings")
+                    } label: {
+                        Label("Notifications", systemImage: "bell")
+                    }
+                }
+                
+                Section {
+                    Button(role: .destructive) {
+                        dismiss()
+                        profileManager.logout()
+                    } label: {
+                        Label("Sign Out", systemImage: "rectangle.portrait.and.arrow.right")
+                    }
+                }
+                
+                Section {
+                    Button(role: .destructive) {
+                        showResetAlert = true
+                    } label: {
+                        Text("Restore App To Factory Settings")
+                            .foregroundStyle(.red)
+                    }
+                } footer: {
+                    Text("This action will permanently delete ALL of your information, including your progress, lessons, history, and profile settings. This action CANNOT be undone.")
+                        .foregroundStyle(.red)
+                }
+            }
+            .navigationTitle("Settings")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("Done") { dismiss() }
+                }
+            }
+            .sheet(isPresented: $showEditProfile) {
+                AccountOnboardingView(isEditing: true)
+            }
+            .alert("Restore Progress", isPresented: $showResetAlert) {
+                TextField("Type 'Delete' to confirm", text: $deleteConfirmationText)
+                    .foregroundStyle(.red)
+                
+                Button("Cancel", role: .cancel) {
+                    deleteConfirmationText = ""
+                }
+                
+                Button("Delete", role: .destructive) {
+                    if deleteConfirmationText == "Delete" {
+                        performFullReset()
+                    }
+                }
+            } message: {
+                Text("Are you sure? This will effectively reset the app. Type 'Delete' to confirm.")
+            }
+        }
+    }
+    
+    func performFullReset() {
+        // Clear all UserDefaults
+        UserDefaults.standard.removeObject(forKey: "savedPracticeSessions")
+        UserDefaults.standard.removeObject(forKey: "archivedPracticeHistory")
+        
+        // Reset Profile to default
+        profileManager.resetToDefaults()
+        
+        dismiss()
+    }
+}
+
+struct AvatarPickerButton: View {
+    let image: UIImage?
+    let color: Color
+    @Binding var selection: PhotosPickerItem?
+    
+    var body: some View {
+        PhotosPicker(selection: $selection, matching: .images) {
+            AvatarDisplayView(image: image, color: color)
+        }
+    }
+}
+
+struct AvatarDisplayView: View {
+    let image: UIImage?
+    let color: Color
+    
+    var body: some View {
+        ZStack {
+            if let img = image {
+                Image(uiImage: img)
+                    .resizable()
+                    .scaledToFill()
+                    .frame(width: 120, height: 120)
+                    .clipShape(Circle())
+                    .overlay(Circle().stroke(Color.white, lineWidth: 4))
+                    .shadow(color: .black.opacity(0.1), radius: 5)
+            } else {
+                Image(systemName: "person.crop.circle.badge.plus")
+                    .font(.system(size: 80))
+                    .foregroundStyle(color.gradient)
+                    .frame(width: 120, height: 120)
+                    .background(Circle().fill(.white))
+                    .shadow(color: .black.opacity(0.1), radius: 5)
+            }
+            
+            // Edit Badge
+            Image(systemName: "camera.fill")
+                .font(.caption)
+                .foregroundStyle(.white)
+                .padding(8)
+                .background(Color.black.opacity(0.6))
+                .clipShape(Circle())
+                .offset(x: 40, y: 40)
+        }
+    }
+}
