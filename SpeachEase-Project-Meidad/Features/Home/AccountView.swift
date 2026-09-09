@@ -552,3 +552,234 @@ struct AccountProfileView: View {
                     }
                 }
             }
+            
+            globalHistory = allAttempts.sorted { $0.date < $1.date }
+            sessionNameMap = nameMap
+        }
+    }
+    
+    func calculateStreak(dates: Set<Date>) -> Int {
+        let sortedDates = dates.sorted(by: >)
+        guard !sortedDates.isEmpty else { return 0 }
+        
+        let calendar = Calendar.current
+        let today = calendar.startOfDay(for: Date())
+        var streak = 0
+        var checkDate = today
+        
+        if sortedDates.contains(today) {
+            streak += 1
+            checkDate = calendar.date(byAdding: .day, value: -1, to: checkDate)!
+        } else {
+             let yesterday = calendar.date(byAdding: .day, value: -1, to: today)!
+             if !sortedDates.contains(yesterday) {
+                 return 0
+             }
+             checkDate = yesterday
+        }
+        
+        while sortedDates.contains(checkDate) {
+            streak += 1
+            checkDate = calendar.date(byAdding: .day, value: -1, to: checkDate)!
+        }
+        
+        return streak
+    }
+}
+
+// MARK: - Components
+
+struct StatsCard: View {
+    let title: String
+    let value: String
+    let extra: String
+    let color: Color
+    let icon: String
+    
+    var body: some View {
+        VStack(spacing: 10) {
+            ZStack {
+                Circle()
+                    .fill(Color.white.opacity(0.2))
+                    .frame(width: 40, height: 40)
+                
+                Image(systemName: icon)
+                    .foregroundStyle(.white)
+                    .font(.headline)
+            }
+            
+            VStack(spacing: 2) {
+                Text(title)
+                    .font(.caption2)
+                    .fontWeight(.bold)
+                    .foregroundStyle(.white.opacity(0.8))
+                    .multilineTextAlignment(.center)
+                
+                Text(value)
+                    .font(.headline)
+                    .fontWeight(.black)
+                    .foregroundStyle(.white)
+                    .minimumScaleFactor(0.5)
+                    .lineLimit(1)
+                
+                if !extra.isEmpty {
+                    Text(extra)
+                        .font(.caption2)
+                        .foregroundStyle(.white.opacity(0.7))
+                }
+            }
+        }
+        .padding(.vertical, 20)
+        .padding(.horizontal, 10)
+        .frame(maxWidth: .infinity)
+        .frame(height: 110)
+        .background(color.gradient)
+        .cornerRadius(20)
+        .shadow(color: color.opacity(0.4), radius: 8, y: 5)
+    }
+}
+
+// Wrapper for Sheet ID
+struct DateWrapper: Identifiable {
+    let id = UUID()
+    let date: Date
+}
+
+// New Detail View
+struct DailyActivityDetailView: View {
+    let date: Date
+    let sessions: [PracticeSession]
+    @Environment(\.dismiss) var dismiss
+    
+    var body: some View {
+        NavigationStack {
+            List {
+                if sessions.isEmpty {
+                    Text("No practice recorded for this day.")
+                        .foregroundStyle(.secondary)
+                } else {
+                    ForEach(sessions) { session in
+                        HStack(spacing: 12) {
+                            // Icon Stack (shows all foci icons)
+                            HStack(spacing: -8) {
+                                ForEach(session.foci.prefix(3), id: \.self) { focus in
+                                    Image(systemName: focus.icon)
+                                        .font(.caption)
+                                        .foregroundStyle(.white)
+                                        .frame(width: 28, height: 28)
+                                        .background(focus.defaultColor.gradient)
+                                        .clipShape(Circle())
+                                        .overlay(Circle().stroke(Color(UIColor.systemBackground), lineWidth: 2))
+                                }
+                            }
+                            
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text(session.name.isEmpty ? "Practice Session" : session.name)
+                                    .font(.headline)
+                                Text(session.foci.map { $0.title }.joined(separator: ", "))
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
+                        .padding(.vertical, 4)
+                    }
+                }
+            }
+            .navigationTitle(date.formatted(date: .abbreviated, time: .omitted))
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("Done") { dismiss() }
+                }
+            }
+        }
+    }
+}
+
+// Updated Heatmap to use dailySessions and handle taps
+// Updated Heatmap to use dailySessions and handle taps
+struct MonthActivityHeatmap: View {
+    let dailySessions: [Date: [PracticeSession]]
+    @Binding var selectedDateWrapper: DateWrapper?
+    
+    let calendar = Calendar.current
+    @Environment(\.horizontalSizeClass) var sizeClass
+    
+    // Dynamic columns: Let SwiftUI decide how many fit based on minimum width
+    var columns: [GridItem] {
+        let minSize: CGFloat = sizeClass == .regular ? 44 : 32
+        return [GridItem(.adaptive(minimum: minSize), spacing: 8)]
+    }
+    
+    var body: some View {
+        let today = Date()
+        // Get range of days in current month
+        let range = calendar.range(of: .day, in: .month, for: today)!
+        let days = range.map { day -> Date in
+            return calendar.date(from: DateComponents(year: calendar.component(.year, from: today), month: calendar.component(.month, from: today), day: day))!
+        }
+        
+        LazyVGrid(columns: columns, spacing: 8) {
+            ForEach(days, id: \.self) { date in
+                Group {
+                    if let sessions = dailySessions[date], !sessions.isEmpty {
+                        // Extract all colors for gradient
+                        let allColors = sessions.flatMap { $0.foci.map(\.defaultColor) }
+                        
+                        OrganicGradient(colors: allColors)
+                            .onTapGesture {
+                                selectedDateWrapper = DateWrapper(date: date)
+                            }
+                    } else {
+                        RoundedRectangle(cornerRadius: 6)
+                            .fill(Color.white.opacity(0.15))
+                    }
+                }
+                .aspectRatio(1, contentMode: .fit)
+                .clipShape(RoundedRectangle(cornerRadius: 6))
+            }
+        }
+    }
+}
+
+// Helper for "Mesh-like" Gradients
+struct OrganicGradient: View {
+    let colors: [Color]
+    
+    var body: some View {
+        GeometryReader { geo in
+            let w = geo.size.width
+            let h = geo.size.height
+            
+            ZStack {
+                // Background base (first color)
+                (colors.first ?? .blue)
+                
+                // Overlay other colors as blurred orbs
+                if colors.count > 1 {
+                    ForEach(1..<colors.count, id: \.self) { index in
+                        let color = colors[index]
+                        Circle()
+                            .fill(color)
+                            .frame(width: w * 0.8, height: h * 0.8)
+                            .blur(radius: w * 0.3) // Heavy blur
+                            .offset(x: offset(index: index, w: w).x, y: offset(index: index, w: w).y)
+                            .opacity(0.8)
+                    }
+                }
+            }
+            .saturation(1.8) // Boost saturation moderately
+        }
+        .drawingGroup() // Optimize rendering
+    }
+    
+    // Distribute blurred circles around the center
+    func offset(index: Int, w: CGFloat) -> (x: CGFloat, y: CGFloat) {
+        // Simple distribution: alternates corners/sides
+        // 1: top-left, 2: bottom-right, 3: top-right, 4: bottom-left
+        let maxOff = w * 0.3
+        switch index % 4 {
+        case 1: return (-maxOff, -maxOff)
+        case 2: return (maxOff, maxOff)
+        case 3: return (maxOff, -maxOff)
+        case 0: return (-maxOff, maxOff)
