@@ -269,3 +269,51 @@ struct AchievementCrownView: View {
                     .scaledToFit()
                     // Size controlled by parent
                     .foregroundStyle(
+                        LinearGradient(
+                            colors: [focus.defaultColor.opacity(0.8), focus.defaultColor],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                    .shadow(color: focus.defaultColor.opacity(0.4), radius: 5)
+            } else {
+                Image(systemName: "crown.fill")
+                    .resizable()
+                    .scaledToFit()
+                    // Size controlled by parent
+                    .foregroundStyle(Color(UIColor.systemGray3))
+                    .overlay(
+                        Image(systemName: "lock.fill")
+                            .font(.title)
+                            .fontWeight(.bold)
+                            .foregroundStyle(.white.opacity(0.9))
+                            .offset(y: 10)
+                    )
+                    .modifier(ShakeEffect(animatableData: CGFloat(shakeAttempts)))
+                    .onTapGesture {
+                        withAnimation(.default) {
+                            shakeAttempts += 1
+                        }
+                        showLockedAlert = true
+                    }
+            }
+        }
+        .alert("Locked Crown", isPresented: $showLockedAlert) {
+            Button("OK", role: .cancel) { }
+        } message: {
+            Text("Unlock all stages to earn this crown")
+        }
+    }
+}
+
+struct ShakeEffect: GeometryEffect {
+    var amount: CGFloat = 10
+    var shakesPerUnit: CGFloat = 3
+    var animatableData: CGFloat
+
+    func effectValue(size: CGSize) -> ProjectionTransform {
+        ProjectionTransform(CGAffineTransform(translationX:
+            amount * sin(animatableData * .pi * shakesPerUnit),
+            y: 0))
+    }
+}
