@@ -189,3 +189,83 @@ struct ExploreContent: View {
                             } else {
                                 // iPad Layout with Equal Sizing
                                 GeometryReader { geo in
+                                    let spacing: CGFloat = 50
+                                    let totalSpacing = spacing * 3 // 3 gaps for 4 items
+                                    let availableWidth = geo.size.width
+                                    let itemSize = (availableWidth - totalSpacing) / 4
+                                    
+                                    VStack(spacing: 50) {
+                                        let allFocuses = Array(PracticeFocus.allCases)
+                                        let row1 = allFocuses.prefix(4)
+                                        let row2 = allFocuses.dropFirst(4)
+                                        
+                                        HStack(spacing: spacing) {
+                                            ForEach(row1, id: \.self) { focus in
+                                                AchievementCrownView(focus: focus, learningManager: learningManager)
+                                                    .frame(width: itemSize)
+                                            }
+                                        }
+                                        
+                                        HStack(spacing: spacing) {
+                                            ForEach(row2, id: \.self) { focus in
+                                                AchievementCrownView(focus: focus, learningManager: learningManager)
+                                                    .frame(width: itemSize)
+                                            }
+                                        }
+                                    }
+                                }
+                                .frame(height: 350) // Fixed height to accommodate the crowns
+                                .padding(.horizontal, 40)
+                                .padding(.bottom, 60)
+                            }
+                        }
+                    }
+                    .padding(.top, 0)
+                    .padding(.bottom, 100)
+                }
+            }
+            .navigationTitle("")
+            .navigationBarTitleDisplayMode(.inline) // Custom title inside ScrollView
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Menu {
+                        Button(role: .destructive) {
+                            showResetAlert = true
+                        } label: {
+                            Label("Reset Progress", systemImage: "trash")
+                        }
+                    } label: {
+                        Image(systemName: "ellipsis.circle")
+                            .font(.system(size: 18))
+                            .foregroundStyle(.primary)
+                    }
+                }
+            }
+            .alert("Reset All Progress?", isPresented: $showResetAlert) {
+                Button("Cancel", role: .cancel) { }
+                Button("Reset Everything", role: .destructive) {
+                    learningManager.resetAllProgress()
+                }
+            } message: {
+                Text("This will permanently remove all your earned crowns and reset every learning path back to Stage 1.\n\nAre you sure?")
+            }
+        }
+    }
+
+
+struct AchievementCrownView: View {
+    let focus: PracticeFocus
+    @ObservedObject var learningManager: LearningManager
+    @State private var shakeAttempts: Int = 0
+    @State private var showLockedAlert = false
+    
+    var body: some View {
+        let isCompleted = learningManager.isSectionCompleted(focus: focus)
+        
+        ZStack {
+            if isCompleted {
+                Image(systemName: "crown.fill")
+                    .resizable()
+                    .scaledToFit()
+                    // Size controlled by parent
+                    .foregroundStyle(
