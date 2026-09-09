@@ -245,3 +245,107 @@ struct PracticeView: View {
     
     // MARK: - Actions
     private func editSession(_ session: PracticeSession) {
+        editingSession = session
+    }
+    
+    private func deleteSession(_ session: PracticeSession) {
+        if let index = sessions.firstIndex(where: { $0.id == session.id }) {
+            // 1. Archive History before deletion
+            if !session.history.isEmpty {
+                var historyToArchive = session.history
+                // Tag with session name
+                for i in 0..<historyToArchive.count {
+                    historyToArchive[i].sessionName = session.name
+                }
+                
+                // Load existing archive
+                var archived: [PracticeAttempt] = []
+                if let data = UserDefaults.standard.data(forKey: "archivedPracticeHistory"),
+                   let decoded = try? JSONDecoder().decode([PracticeAttempt].self, from: data) {
+                    archived = decoded
+                }
+                
+                // Append and Save
+                archived.append(contentsOf: historyToArchive)
+                if let encoded = try? JSONEncoder().encode(archived) {
+                    UserDefaults.standard.set(encoded, forKey: "archivedPracticeHistory")
+                }
+            }
+            
+            withAnimation {
+                sessions.remove(at: index)
+                saveSessions()
+            }
+        }
+    }
+    
+    // MARK: - Persistence
+    private func saveSessions() {
+        if let encoded = try? JSONEncoder().encode(sessions) {
+            UserDefaults.standard.set(encoded, forKey: "savedPracticeSessions")
+        }
+    }
+    
+    private func loadSessions() {
+        // Only load if empty to prevent overwriting active state and destabilizing IDs
+        guard sessions.isEmpty else { return }
+        
+        if let data = UserDefaults.standard.data(forKey: "savedPracticeSessions"),
+           let decoded = try? JSONDecoder().decode([PracticeSession].self, from: data) {
+            sessions = decoded
+        }
+    }
+}
+
+// MARK: - Session Display Card
+struct SessionCard: View {
+    let session: PracticeSession
+    @Environment(\.horizontalSizeClass) var sizeClass
+    
+    var body: some View {
+        let isIPad = sizeClass == .regular
+        // Use primary focus for background color if multiple, or maybe a neutral one?
+        // User didn't specify color change, just icon.
+        let primaryFocus = session.foci.first ?? .vocal 
+        
+        let displayIcon = session.foci.count > 1 ? "square.grid.2x2.fill" : primaryFocus.icon
+        
+        ZStack {
+            // Background Texture (Watermark)
+            GeometryReader { proxy in
+                Image(systemName: displayIcon)
+                    .font(.system(size: proxy.size.height * 0.8))
+                    .foregroundColor(.white.opacity(0.1))
+                    .rotationEffect(.degrees(-15))
+                    .offset(x: proxy.size.width * 0.6, y: proxy.size.height * 0.2)
+            }
+            .clipped()
+            
+            HStack(spacing: 20) {
+                // Modified content layout for taller cards?
+                // Actually the user just said "twice the height", maybe we stack things better if tall?
+                // For now, keep HStack but align top if tall.
+                
+                // Icon
+                Image(systemName: displayIcon)
+                    .font(.system(size: isIPad ? 48 : 32)) 
+                    .foregroundColor(.white)
+                    .padding(.leading, 10)
+                    .frame(width: isIPad ? 80 : 50)
+                
+                VStack(alignment: .leading, spacing: isIPad ? 12 : 6) {
+                    Text(session.name)
+                        .font(isIPad ? .title : .title3)
+                        .fontWeight(.bold)
+                        .foregroundColor(.white)
+                        .lineLimit(2)
+                    
+                    HStack(spacing: 12) {
+                        // Focus Label
+                        HStack(spacing: 4) {
+                            Image(systemName: "target")
+                                .font(.caption2)
+                            
+                            // Check if multiple
+                            if session.foci.count > 1 {
+                                Text("Mixed (\(session.foci.count))")
