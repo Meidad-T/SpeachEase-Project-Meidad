@@ -598,3 +598,109 @@ struct PathBackgroundView: View {
                                     .foregroundStyle(color)
                                     .scaleEffect(1.2)
                             } else if itemType == 1 {
+                                Image(systemName: "laurel.leading")
+                                    .foregroundStyle(color.opacity(0.8))
+                                    .rotationEffect(.degrees(side == "left" ? -45 : 45))
+                                    .scaleEffect(1.5)
+                            } else {
+                                Image(systemName: "leaf.fill")
+                                    .foregroundStyle(color.opacity(0.6))
+                                    .rotationEffect(.degrees(randomRotation))
+                            }
+                            
+                        case .autumn:
+                            if itemType == 0 {
+                                Image(systemName: "sun.max.fill")
+                                    .foregroundStyle(.yellow.opacity(0.8))
+                                    .shadow(color: .orange, radius: 10)
+                            } else if itemType == 1 {
+                                Image(systemName: "wind")
+                                    .foregroundStyle(.gray.opacity(0.3))
+                                    .scaleEffect(1.5)
+                            } else {
+                                Image(systemName: "leaf.fill")
+                                    .foregroundStyle(index % 3 == 0 ? .orange : (index % 3 == 1 ? .red : .brown))
+                                    .rotationEffect(.degrees(Double.random(in: 0...360)))
+                            }
+                        
+                        case .energy:
+                            // Pacing/Red: Fire, Bolts, Hearts
+                            if itemType == 0 {
+                                Image(systemName: "flame.fill")
+                                    .foregroundStyle(.orange)
+                                    .shadow(color: .red, radius: 5)
+                            } else if itemType == 1 {
+                                Image(systemName: "bolt.fill")
+                                    .foregroundStyle(.yellow)
+                                    .shadow(color: .orange, radius: 5)
+                            } else if itemType == 2 {
+                                Image(systemName: "heart.fill")
+                                    .foregroundStyle(Color.red.opacity(0.8))
+                            } else {
+                                // Dynamic shapes
+                                Image(systemName: "triangle.fill")
+                                    .foregroundStyle(color.opacity(0.5))
+                                    .scaleEffect(0.6)
+                                    .rotationEffect(.degrees(Double.random(in: 0...360)))
+                            }
+
+                        case .mystic:
+                            if itemType == 0 {
+                                Image(systemName: "suit.diamond.fill")
+                                    .foregroundStyle(color.opacity(0.8))
+                                    .shadow(color: .white.opacity(0.6), radius: 5)
+                            } else if itemType == 1 {
+                                Image(systemName: "sparkles")
+                                    .foregroundStyle(.white) // White sparkles
+                            } else if itemType == 2 {
+                                Image(systemName: "camera.macro")
+                                    .foregroundStyle(Color.purple.opacity(0.7))
+                            } else {
+                                // Stars - PINK now, not yellow
+                                Image(systemName: "star.fill")
+                                    .foregroundStyle(.pink.opacity(0.6))
+                                    .scaleEffect(0.5)
+                            }
+                            
+                        case .ocean:
+                            // Body/Blue: Water drops, distinct from ice
+                            if itemType == 0 {
+                                Image(systemName: "drop.fill")
+                                    .foregroundStyle(Color.blue.opacity(0.9)) // Darker blue
+                            } else if itemType == 1 {
+                                Circle() // Bubbles
+                                    .stroke(Color.white.opacity(0.5), lineWidth: 2)
+                                    .frame(width: 20, height: 20)
+                            } else {
+                                // Waves
+                                Image(systemName: "water.waves")
+                                    .foregroundStyle(color.opacity(0.7))
+                            }
+
+                        case .frost:
+                            // Eye/Teal: Ice and Snow
+                            if itemType == 0 {
+                                Image(systemName: "snowflake")
+                                    .foregroundStyle(.cyan.opacity(0.8))
+                                    .shadow(color: .white, radius: 2)
+                            } else if itemType == 1 {
+                                Image(systemName: "wind.snow")
+                                    .foregroundStyle(.white.opacity(0.5))
+                            } else {
+                                // Ice crystals
+                                Image(systemName: "sparkle")
+                                    .foregroundStyle(.white.opacity(0.7))
+                            }
+                        }
+                    }
+                    .font(.system(size: 40)) // Base size
+                    .scaleEffect(scale)
+                    .shadow(color: color.opacity(0.2), radius: 4, x: 0, y: 4)
+                    .position(x: xPos, y: totalHeight - yPos)
+                }
+            }
+        }
+        .frame(height: totalHeight)
+        .allowsHitTesting(false)
+    }
+}
