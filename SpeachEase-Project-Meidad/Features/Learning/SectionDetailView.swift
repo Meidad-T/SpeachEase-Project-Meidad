@@ -421,3 +421,180 @@ struct LessonNode: View {
         }
         .contextMenu {
             Button {
+                // Edit Logic Placeholder
+            } label: {
+                Label("Edit Lesson", systemImage: "pencil")
+            }
+            
+            Button(role: .destructive) {
+                // Delete Logic Placeholder
+            } label: {
+                Label("Delete Lesson", systemImage: "trash")
+            }
+        }
+    }
+    
+    var iconName: String {
+        switch status {
+        case .locked: return "lock.fill"
+        case .completed: return "checkmark"
+        case .active: return "star.fill"
+        }
+    }
+    
+    var backgroundColor: Color {
+        switch status {
+        case .locked: return Color(UIColor.systemGray4)
+        case .active: return focusColor
+        case .completed: return focusColor
+        }
+    }
+    
+    var shadowColor: Color {
+        switch status {
+        case .locked: return Color(UIColor.systemGray3)
+        case .active: return depthColor
+        case .completed: return depthColor
+        }
+    }
+}
+
+struct PathShape: Shape {
+    let lessonCount: Int
+    let spacing: CGFloat
+    
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+        guard lessonCount > 1 else { return path }
+        
+        let centerX = rect.width / 2
+        // Use the frame height provided by the parent view
+        let totalHeight = rect.height
+        
+        // High-resolution drawing for "Waxy" smooth curve
+        // We draw from Bottom (Lesson 0) to Top (Lesson N)
+        // Reduced bottom padding to 50
+        
+        let startY = totalHeight - 50
+        let endY = startY - CGFloat((lessonCount - 1) * Int(spacing))
+        
+        // Start point
+        path.move(to: CGPoint(x: centerX + getOffset(y: startY, totalHeight: totalHeight), y: startY))
+        
+        // Step size for smoothness (smaller = smoother)
+        let step: CGFloat = 5
+        
+        // Iterate upwards (decreasing Y)
+        var currentY = startY
+        while currentY > endY {
+            currentY -= step
+            let x = centerX + getOffset(y: currentY, totalHeight: totalHeight)
+            path.addLine(to: CGPoint(x: x, y: currentY))
+        }
+        
+        return path
+    }
+    
+    func getOffset(y: CGFloat, totalHeight: CGFloat) -> CGFloat {
+        // Reverse engineer the index from Y to keep consistency
+        // Y = totalHeight - 50 - (index * 140)
+        // index = (totalHeight - 50 - Y) / 140
+        let indexLike = (totalHeight - 50 - y) / 140.0
+        let amplitude: CGFloat = 80
+        return amplitude * sin(Double(indexLike) * 2.0)
+    }
+}
+
+struct SectionPlayView: View {
+    let focus: PracticeFocus
+    @State private var isGamePresented = false
+    
+    var body: some View {
+        ZStack {
+            // Consistent BG style
+            LinearGradient(
+                colors: [focus.defaultColor.opacity(0.6), Color(UIColor.systemBackground)],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+            .ignoresSafeArea()
+            
+            VStack(spacing: 20) {
+                Image(systemName: "gamecontroller.fill")
+                    .font(.system(size: 60))
+                    .foregroundStyle(focus.defaultColor)
+                
+                Text(focus == .vocab ? "Vocabulary Tower" : "Interactive Exercises")
+                    .font(.title)
+                    .fontWeight(.bold)
+                
+                Text(focus == .vocab ? "Stack the crates by answering grammar questions correctly!" : "Put your \(focus.title.lowercased()) skills to the test with these games.")
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal)
+                    .foregroundStyle(.primary.opacity(0.8))
+                
+                if focus == .vocab {
+                    Button {
+                        isGamePresented = true
+                    } label: {
+                        Text("Play Now")
+                            .font(.title3)
+                            .fontWeight(.bold)
+                            .foregroundStyle(.white)
+                            .padding(.horizontal, 40)
+                            .padding(.vertical, 16)
+                            .background(focus.defaultColor)
+                            .cornerRadius(30)
+                            .shadow(radius: 5)
+                            .padding(.top, 20)
+                    }
+                } else {
+                    Text("(Coming Soon)")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .padding(.top, 10)
+                }
+            }
+        }
+        .fullScreenCover(isPresented: $isGamePresented) {
+            VocabularyTowerGameView()
+        }
+    }
+}
+
+enum PathTheme {
+    case forest, autumn, energy, mystic, ocean, frost
+}
+
+struct PathBackgroundView: View {
+    let totalHeight: CGFloat
+    let color: Color
+    let theme: PathTheme
+    
+    var body: some View {
+        GeometryReader { proxy in
+            let width = proxy.size.width
+            // Increased density slightly for "lots of things"
+            // Frost/Eye needs more density per request
+            let baseDensity: CGFloat = theme == .frost ? 50 : 70
+            let density: Int = Int(totalHeight / baseDensity)
+            
+            ZStack {
+                ForEach(0..<density, id: \.self) { index in
+                    let itemType = index % 5
+                    // Randomized positioning
+                    let yPos = CGFloat(index) * baseDensity + CGFloat.random(in: -30...30)
+                    let side = index % 2 == 0 ? "left" : "right"
+                    let xOffset = CGFloat.random(in: 10...120)
+                    let xPos = side == "left" ? xOffset : (width - xOffset)
+                    let scale = CGFloat.random(in: 0.7...1.5)
+                    let randomRotation = Double.random(in: -20...20)
+                    
+                    Group {
+                        switch theme {
+                        case .forest:
+                            if itemType == 0 {
+                                Image(systemName: "tree.fill")
+                                    .foregroundStyle(color)
+                                    .scaleEffect(1.2)
+                            } else if itemType == 1 {
