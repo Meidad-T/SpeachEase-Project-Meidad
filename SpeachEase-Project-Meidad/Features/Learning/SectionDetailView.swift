@@ -139,3 +139,285 @@ struct SectionAboutView: View {
                                 Text(chunk)
                                     .font(.system(.body, design: .rounded))
                                     .lineSpacing(5)
+                                    .foregroundStyle(.primary.opacity(0.8))
+                                    .fixedSize(horizontal: false, vertical: true)
+                                
+                                Spacer()
+                            }
+                            .padding(20)
+                            .background(Color.adaptiveCardBackground)
+                            .clipShape(RoundedRectangle(cornerRadius: 20))
+                            .shadow(color: Color.black.opacity(0.05), radius: 5, x: 0, y: 2)
+                        }
+                    }
+                    .padding(.horizontal)
+                    
+                    Spacer(minLength: 50)
+                }
+            }
+        }
+    }
+}
+
+struct SectionLearnView: View {
+    let focus: PracticeFocus
+    @ObservedObject var learningManager = LearningManager.shared
+    @State private var selectedLesson: Lesson?
+    
+    var depthColor: Color {
+        switch focus {
+        case .vocal: return Color(red: 0.0, green: 0.5, blue: 0.4) // Darker Green/Teal for Green
+        case .vocab: return .orange // Orange for Yellow
+        case .interview: return .red // Red for Orange
+        case .pacing: return Color(red: 0.6, green: 0.1, blue: 0.2) // Dark Red/Maroon for Pink
+        case .facial: return .indigo // Indigo for Purple
+        case .body: return Color(red: 0.0, green: 0.0, blue: 0.5) // Dark Blue for Blue
+        case .eye: return .blue // Blue for Teal
+
+        }
+    }
+    
+    var body: some View {
+        let lessons = learningManager.lessons(for: focus)
+        // Determine active lesson for auto-scrolling
+        let activeId = lessons.first { learningManager.isLessonUnlocked(id: $0.id, allLessons: lessons) && !learningManager.isLessonCompleted(id: $0.id) }?.id 
+            ?? lessons.last(where: { learningManager.isLessonCompleted(id: $0.id) })?.id 
+            ?? lessons.first?.id 
+            ?? ""
+            
+        GeometryReader { geo in
+            ZStack {
+                Color(UIColor.systemGroupedBackground).ignoresSafeArea()
+            
+            ScrollViewReader { proxy in
+                ScrollView(showsIndicators: false) {
+                    ZStack(alignment: .bottom) {
+                        // 1. Calculate Heights
+                        let lessonCount = lessons.count
+                        let gemIndex = lessonCount
+                        // Path ends at the last lesson, Gem floats above
+                        // Reduced buffers: 
+                        // Top was + 350, now + 140 (approx 60% cut)
+                        // Bottom margin logic separate below.
+                        let totalHeight = CGFloat(lessonCount * 140) + 140
+                        
+                        // 1.5. Dynamic Scenery Background
+                        // 1.5. Dynamic Scenery Background
+                        // 1.5. Dynamic Scenery Background
+                        // Map focus to theme based on color group & Feedback
+                        let theme: PathTheme = {
+                            // Green (Vocal) -> Forest
+                            // Yellow (Vocab) -> Forest (Requested "Trees")
+                            if focus.id == "vocal" || focus.id == "vocab" { return .forest }
+                            
+                            // Orange (Interview) -> Autumn
+                            if focus.id == "interview" { return .autumn }
+                            
+                            // Red (Pacing) -> Energy (New)
+                            if focus.id == "pacing" { return .energy }
+                            
+                            // Purple (Facial) -> Mystic
+                            if focus.id == "facial" { return .mystic }
+                            
+                            // Blue (Body) -> Ocean (New, no ice)
+                            if focus.id == "body" { return .ocean }
+                            
+                            // Teal (Eye) -> Frost (More icons)
+                            if focus.id == "eye" { return .frost }
+                            
+                            return .forest // Fallback
+                        }()
+                        
+                        PathBackgroundView(totalHeight: totalHeight, color: focus.defaultColor, theme: theme)
+                        
+                        // 2. The Winding Path Line (Drawn Bottom-Up)
+                        PathShape(lessonCount: lessonCount, spacing: 140)
+                            .stroke(
+                                style: StrokeStyle(lineWidth: 12, lineCap: .round, lineJoin: .round, dash: [10, 15])
+                            )
+                            .foregroundStyle(focus.defaultColor.opacity(0.3))
+                            .frame(height: totalHeight)
+                        
+                        // 3. The Goal/Treasure Chest (At the Top)
+                        // Using reduced bottom padding of 50
+                        let gemYOffset = totalHeight - 50 - CGFloat(gemIndex * 140)
+                        let gemXOffset: CGFloat = 0 // Centered
+                        
+                        ZStack {
+                            // Large Crown (Colored)
+                            ZStack {
+                                Image(systemName: "crown.fill")
+                                    .font(.system(size: 100))
+                                    .foregroundStyle(
+                                        LinearGradient(
+                                            colors: [focus.defaultColor.opacity(0.8), focus.defaultColor],
+                                            startPoint: .topLeading,
+                                            endPoint: .bottomTrailing
+                                        )
+                                    )
+                                    .shadow(color: focus.defaultColor.opacity(0.5), radius: 10, x: 0, y: 5)
+                                    .overlay(
+                                        // Subtle shine
+                                        Image(systemName: "crown")
+                                            .font(.system(size: 100))
+                                            .foregroundStyle(.white.opacity(0.3))
+                                    )
+                            }
+                            .scaleEffect(1.2)
+                        }
+                        .position(x: geo.size.width / 2 + gemXOffset, y: gemYOffset)
+                        
+                        // 4. Lesson Nodes (Placed Bottom-Up)
+                        ForEach(Array(lessons.enumerated()), id: \.element.id) { index, lesson in
+                            // Calculation: Index 0 is at the BOTTOM. 
+                            // Reduced bottom padding to 50
+                            let bottomPadding: CGFloat = 50 
+                            let yOffset = totalHeight - bottomPadding - CGFloat(index * 140)
+                            let xOffset = getOffset(for: index)
+                            
+                            ZStack {
+                                // The Label (Side Signpost) - Hidden if Locked
+                                if getStatus(for: lesson, allLessons: lessons) != .locked {
+                                    Text(lesson.title)
+                                        .font(.system(.caption, design: .rounded, weight: .bold))
+                                        .multilineTextAlignment(index % 2 == 0 ? .leading : .trailing)
+                                        .padding(.horizontal, 12)
+                                        .padding(.vertical, 8)
+                                        .background(Color.adaptiveCardBackground)
+                                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                                        .shadow(color: Color.black.opacity(0.1), radius: 4, x: 0, y: 2)
+                                        .offset(x: xOffset > 0 ? 90 : -90)
+                                        .frame(width: 120, alignment: xOffset > 0 ? .leading : .trailing)
+                                }
+                                
+                                // The Node Button
+                                LessonNode(
+                                    lesson: lesson,
+                                    index: index,
+                                    focusColor: focus.defaultColor,
+                                    depthColor: depthColor,
+                                    status: getStatus(for: lesson, allLessons: lessons)
+                                ) {
+                                    if getStatus(for: lesson, allLessons: lessons) != .locked {
+                                        selectedLesson = lesson
+                                    }
+                                }
+                            }
+                            .position(x: geo.size.width / 2 + xOffset, y: yOffset)
+                            .id(lesson.id) // For ScrollViewReader
+                        }
+                        
+                        // 5. Invisible Bottom Anchor
+                        // Allows scrolling to the extreme bottom
+                        Color.clear
+                            .frame(width: 1, height: 1)
+                            .position(x: geo.size.width / 2, y: totalHeight)
+                            .id("bottom-anchor")
+                    }
+                    .frame(height: CGFloat((lessons.count) * 140) + 140)
+                    .padding(.bottom, 50) 
+                }
+                .onAppear {
+                    // Scroll to the active lesson with a slight delay
+                    let target = activeId.isEmpty ? lessons.first?.id ?? "" : activeId
+                    
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                        if let index = lessons.firstIndex(where: { $0.id == target }) {
+                            // Scroll Logic:
+                            // Index 0: Scroll to absolute bottom anchor to show full padding.
+                            // Index < 3: Anchor Lesson to bottom.
+                            // Others: Center.
+                            withAnimation(.easeInOut(duration: 0.5)) {
+                                if index == 0 {
+                                    proxy.scrollTo("bottom-anchor", anchor: .bottom)
+                                } else if index < 3 {
+                                    proxy.scrollTo(target, anchor: .bottom)
+                                } else {
+                                    proxy.scrollTo(target, anchor: .center)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            }
+            .fullScreenCover(item: $selectedLesson) { lesson in
+                LessonView(lesson: lesson, focusColor: focus.defaultColor)
+            }
+        }
+    }
+    
+    // Wave Logic
+    func getOffset(for index: Int) -> CGFloat {
+        let amplitude: CGFloat = 80
+        return amplitude * sin(Double(index) * 2.0)
+    }
+    
+    func getStatus(for lesson: Lesson, allLessons: [Lesson]) -> LessonStatus {
+        if focus == .interview { return .locked }
+        
+        if learningManager.isLessonCompleted(id: lesson.id) {
+            return .completed
+        } else if learningManager.isLessonUnlocked(id: lesson.id, allLessons: allLessons) {
+            return .active
+        } else {
+            return .locked
+        }
+    }
+}
+
+enum LessonStatus {
+    case locked, active, completed
+}
+
+// Refined LessonNode
+struct LessonNode: View {
+    let lesson: Lesson
+
+    let index: Int
+    let focusColor: Color
+    let depthColor: Color
+    let status: LessonStatus
+    let action: () -> Void
+    
+    @State private var pulse: CGFloat = 1.0
+    
+    var body: some View {
+        ZStack {
+            // Active Pulse Ring
+            if status == .active {
+                Circle()
+                    .stroke(focusColor.opacity(0.5), lineWidth: 4)
+                    .frame(width: 86, height: 86)
+                    .scaleEffect(pulse)
+                    .opacity(2 - pulse)
+                    .onAppear {
+                        withAnimation(.easeOut(duration: 1.5).repeatForever(autoreverses: false)) {
+                            pulse = 1.5
+                        }
+                    }
+            }
+            
+            // Main Circle
+            Circle()
+                .fill(backgroundColor)
+                .frame(width: 74, height: 74)
+                .shadow(color: shadowColor, radius: 0, x: 0, y: 6)
+                
+                // Inner Highlight/Bevel
+                .overlay(
+                    Circle()
+                        .stroke(Color.white.opacity(0.3), lineWidth: 3)
+                        .padding(2)
+                )
+            
+            // Icon
+            Image(systemName: iconName)
+                .font(.system(size: 30, weight: .bold))
+                .foregroundStyle(.white)
+        }
+        .onTapGesture {
+            action()
+        }
+        .contextMenu {
+            Button {
