@@ -101,3 +101,22 @@ struct MonthGrid: View {
         
         // Add nil for offset (weekday - 1 because Sunday is 1)
         var days: [Date?] = Array(repeating: nil, count: firstWeekday - 1)
+        
+        for day in 1...numDays {
+            if let date = calendar.date(from: DateComponents(year: year, month: month, day: day)) {
+                days.append(date)
+            }
+        }
+        return days
+    }
+    
+    private func isDateActive(_ date: Date) -> Bool {
+        // Simple day matching
+        for activeDate in activeDates {
+            if calendar.isDate(activeDate, inSameDayAs: date) {
+                return true
+            }
+        }
+        return false
+    }
+}
