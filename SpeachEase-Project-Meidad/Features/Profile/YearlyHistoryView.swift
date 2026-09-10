@@ -71,3 +71,33 @@ struct MonthGrid: View {
                 .font(.headline)
                 .foregroundStyle(.white)
             
+            LazyVGrid(columns: columns, spacing: 4) {
+                ForEach(daysInMonth(), id: \.self) { date in
+                    if let date = date {
+                        let isActive = isDateActive(date)
+                        RoundedRectangle(cornerRadius: 2)
+                            .fill(isActive ? Color.green : Color.gray.opacity(0.2))
+                            .aspectRatio(1, contentMode: .fit)
+                    } else {
+                        // Empty placeholder for start of month alignment
+                         RoundedRectangle(cornerRadius: 2)
+                            .fill(Color.clear)
+                            .aspectRatio(1, contentMode: .fit)
+                    }
+                }
+            }
+        }
+        .padding()
+        .background(Color(UIColor.secondarySystemGroupedBackground).opacity(0.1))
+        .cornerRadius(12)
+    }
+    
+    private func daysInMonth() -> [Date?] {
+        guard let monthDate = calendar.date(from: DateComponents(year: year, month: month, day: 1)),
+              let range = calendar.range(of: .day, in: .month, for: monthDate) else { return [] }
+        
+        let numDays = range.count
+        let firstWeekday = calendar.component(.weekday, from: monthDate)
+        
+        // Add nil for offset (weekday - 1 because Sunday is 1)
+        var days: [Date?] = Array(repeating: nil, count: firstWeekday - 1)
