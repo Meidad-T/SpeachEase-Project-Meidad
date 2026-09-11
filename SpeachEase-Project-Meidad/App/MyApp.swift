@@ -7,3 +7,21 @@ struct MyApp: App {
             TabView {
                 NavigationStack {
                     ExploreView()
+                }
+                .tabItem {
+                    Label("Explore", systemImage: "magnifyingglass")
+                }
+                
+                NavigationStack {
+                    PracticeView()
+                }
+                .tabItem {
+                    Label("Practice", systemImage: "gamecontroller.fill")
+                }
+                
+                NavigationStack {
+                    AccountView()
+                }
+                .tabItem {
+                    Label("Account", systemImage: "person.circle.fill")
+                }
