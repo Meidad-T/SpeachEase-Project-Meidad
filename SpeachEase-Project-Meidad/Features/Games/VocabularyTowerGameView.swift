@@ -392,3 +392,167 @@ class TowerScene: SKScene, SKPhysicsContactDelegate {
         
         // Reset Camera Target State
         camTargetY = size.height / 2
+        
+        // Reset Camera Position
+        cameraNode.removeAllActions()
+        let resetAction = SKAction.move(to: CGPoint(x: size.width/2, y: size.height/2), duration: 0.5)
+        cameraNode.run(resetAction)
+    }
+    
+    override func update(_ currentTime: TimeInterval) {
+        guard isGameActive, let crane = crane else { return }
+        
+        // 1. Crane Movement - Speed 1.0 (Balanced)
+        let speed = 1.0
+        let amplitude = (size.width / 2) - (boxSize.width / 2) - 20
+        // Crane is child of Camera (0,0 center).
+        let x = CGFloat(sin(currentTime * speed)) * amplitude
+        crane.position.x = x
+        
+        // 2. Camera Auto-Scroll - Continuous Follow
+        
+        // Calculate Crane World Position
+        let craneWorldPos = convert(crane.position, from: cameraNode)
+        
+        // Filter for resting boxes to determine stable stack height
+        let restingBoxes = children.filter {
+            guard $0.name == "box" else { return false }
+            guard let body = $0.physicsBody else { return false }
+            
+            // Velocity check (strictly resting)
+            if abs(body.velocity.dy) > 1.0 { return false }
+            
+            // Position check regarding crane (ignore box currently being held/dropped near crane)
+            if $0.position.y > (craneWorldPos.y - 150) { return false }
+            
+            return true
+        }
+        
+        // Find highest resting box top
+        var maxBoxY: CGFloat = 50 // Start at ground level (roughly) (Ground is at 50, top is 100)
+        
+        for box in restingBoxes {
+             // Box center + half height = top
+            let top = box.position.y + boxSize.height/2
+            if top > maxBoxY {
+                maxBoxY = top
+            }
+        }
+        
+        // Target Logic:
+        // We want the top of the stack to be positioned at roughly the lower third or middle of the screen
+        // so there is plenty of room above it for the crane.
+        // Screen Center Y = cameraNode.position.y
+        // We want MaxBoxTop to be at (CameraY - Offset).
+        // So CameraY = MaxBoxTop + Offset.
+        // Let's try Offset = 200. This puts the top of the stack 200pts below the center of the screen.
+        let desiredCamY = maxBoxY + 300
+        
+        // Ratchet: Only move up, never down. AND ensure we respect minimum start height.
+        let minHeight = size.height / 2
+        if desiredCamY > camTargetY {
+            camTargetY = desiredCamY
+        }
+        // Ensure we are at least at min height (fixes initial state)
+        if camTargetY < minHeight {
+            camTargetY = minHeight
+        }
+        
+        // Smooth Lerp to Target
+        let currentCamY = cameraNode.position.y
+        if abs(camTargetY - currentCamY) > 0.5 {
+            // slightly faster lerp for responsiveness
+            let newCamY = currentCamY + (camTargetY - currentCamY) * 0.08
+            cameraNode.position.y = newCamY
+        }
+        
+        // 3. Game Over Check
+        children.filter { $0.name == "box" }.forEach { box in
+            if box.position.y < -200 {
+                // If box falls way below (absolute world coordinates), game over.
+                triggerGameOver()
+            }
+        }
+    }
+    
+    nonisolated func didBegin(_ contact: SKPhysicsContact) {
+        let maskA = contact.bodyA.categoryBitMask
+        let maskB = contact.bodyB.categoryBitMask
+        
+        MainActor.assumeIsolated {
+            handleCollision(maskA: maskA, maskB: maskB)
+        }
+    }
+    
+    func handleCollision(maskA: UInt32, maskB: UInt32) {
+        guard isGameActive else { return }
+        
+        // Identify collision between Box and Ground
+        if (maskA == CategoryBox && maskB == CategoryGround) ||
+           (maskB == CategoryBox && maskA == CategoryGround) {
+            
+            // If this is the FIRST box, hitting ground is OK.
+            // If this is the 2nd+ box, hitting ground means we missed the stack.
+            let boxCount = children.filter({ $0.name == "box" }).count
+            if boxCount > 1 {
+                triggerGameOver()
+            }
+        }
+    }
+    
+    func triggerGameOver() {
+        guard isGameActive else { return }
+        isGameActive = false
+        onGameOver?()
+    }
+    
+    func dropBox() {
+        guard let crane = crane else { return }
+        
+        // Check previous box height to ensure we can actually stack
+        
+        let box = createCrateNode()
+        
+        // Convert Crane Position (Camera Space) to Scene Space (World Space)
+        // Crane is child of Camera. Box is added to Scene.
+        let spawnPos = convert(crane.position, from: cameraNode)
+        box.position = spawnPos
+        box.position.y -= 60 // Match the visual position (-60)
+        
+        box.name = "box"
+        box.zPosition = 5
+        
+        box.physicsBody = SKPhysicsBody(rectangleOf: boxSize)
+        box.physicsBody?.mass = 5.0 // Heavier feel
+        box.physicsBody?.restitution = 0.0 // No bounce, solid thud
+        box.physicsBody?.friction = 1.0
+        box.physicsBody?.categoryBitMask = CategoryBox
+        box.physicsBody?.collisionBitMask = CategoryGround | CategoryBox
+        box.physicsBody?.contactTestBitMask = CategoryGround | CategoryDeadZone // Detect ground hits
+        
+        addChild(box)
+        lastBox = box
+    }
+    
+    func createCrateNode() -> SKNode {
+        // Container
+        let node = SKShapeNode(rectOf: boxSize, cornerRadius: 8)
+        node.fillColor = .yellow // Vocab section color
+        node.strokeColor = UIColor(red: 0.8, green: 0.7, blue: 0.0, alpha: 1.0) // Darker yellow stroke
+        node.lineWidth = 4
+        
+        // Inner Detail (X or Planks) - Darker yellow/gold to contrast on yellow
+        let plankColor = UIColor(red: 0.9, green: 0.75, blue: 0.0, alpha: 1.0) // Gold-ish
+        
+        // Diagonal 1
+        let path1 = UIBezierPath()
+        path1.move(to: CGPoint(x: -boxSize.width/2 + 10, y: -boxSize.height/2 + 10))
+        path1.addLine(to: CGPoint(x: boxSize.width/2 - 10, y: boxSize.height/2 - 10))
+        let diag1 = SKShapeNode(path: path1.cgPath)
+        diag1.strokeColor = plankColor
+        diag1.lineWidth = 10
+        node.addChild(diag1)
+        
+        // Diagonal 2
+        let path2 = UIBezierPath()
+        path2.move(to: CGPoint(x: -boxSize.width/2 + 10, y: boxSize.height/2 - 10))
