@@ -25,3 +25,14 @@ struct MyApp: App {
                 .tabItem {
                     Label("Account", systemImage: "person.circle.fill")
                 }
+                
+                NavigationStack {
+                    MicTestView()
+                }
+                .tabItem {
+                    Label("Mic Test", systemImage: "mic.fill")
+                }
+                
+                NavigationStack {
+                    CameraTestView()
+                }
