@@ -556,3 +556,102 @@ class TowerScene: SKScene, SKPhysicsContactDelegate {
         // Diagonal 2
         let path2 = UIBezierPath()
         path2.move(to: CGPoint(x: -boxSize.width/2 + 10, y: boxSize.height/2 - 10))
+        path2.addLine(to: CGPoint(x: boxSize.width/2 - 10, y: -boxSize.height/2 + 10))
+        let diag2 = SKShapeNode(path: path2.cgPath)
+        diag2.strokeColor = plankColor
+        diag2.lineWidth = 10
+        node.addChild(diag2)
+        
+        // Border inset
+        let border = SKShapeNode(rectOf: CGSize(width: boxSize.width - 20, height: boxSize.height - 20), cornerRadius: 4)
+        border.strokeColor = plankColor
+        border.lineWidth = 6
+        border.fillColor = .clear
+        node.addChild(border)
+        
+        return node
+    }
+}
+
+// MARK: - Question Generator
+struct Question {
+    let text: String
+    let options: [String]
+    let correctIndex: Int
+}
+
+class QuestionGenerator {
+    
+    func generate() -> Question {
+        let type = Int.random(in: 0...2)
+        
+        switch type {
+        case 0: return generateSynonym()
+        case 1: return generateAntonym()
+        default: return generateCompleteSentence()
+        }
+    }
+    
+    // --- Data Sources ---
+    
+    // Tuple: (Word, Synonym, [Distractors])
+    let synonyms = [
+        ("Happy", "Joyful", ["Sad", "Angry"]),
+        ("Big", "Huge", ["Tiny", "Weak"]),
+        ("Fast", "Quick", ["Slow", "Lazy"]),
+        ("Smart", "Clever", ["Dull", "Silly"]),
+        ("Beautiful", "Pretty", ["Ugly", "Plain"]),
+        ("Strong", "Powerful", ["Weak", "Fragile"]),
+        ("Brave", "Courageous", ["Scared", "Timid"]),
+        ("Calm", "Peaceful", ["Wild", "Loud"])
+    ]
+    
+    // Tuple: (Word, Antonym, [Distractors])
+    let antonyms = [
+        ("Hot", "Cold", ["Warm", "Spicy"]),
+        ("Up", "Down", ["Left", "Right"]),
+        ("Day", "Night", ["Light", "Sun"]),
+        ("Win", "Lose", ["Play", "Draw"]),
+        ("Start", "Finish", ["Begin", "Go"]),
+        ("Love", "Hate", ["Like", "Enjoy"]),
+        ("Rich", "Poor", ["Wealthy", "Money"]),
+        ("Hard", "Soft", ["Difficult", "Tough"])
+    ]
+    
+    // Tuple: (Sentence part 1, Correct, [Distractors], Sentence part 2)
+    let sentences = [
+        ("The cat", "sat", ["flew", "swim"], "on the mat."),
+        ("She", "read", ["red", "reed"], "the book."),
+        ("They", "are", ["is", "am"], "playing soccer."),
+        ("He", "went", ["go", "gone"], "to the store."),
+        ("Can you", "hear", ["here", "her"], "the music?"),
+        ("I have", "two", ["to", "too"], "apples."),
+        ("The sun is", "bright", ["dark", "cold"], "today."),
+        ("Please", "close", ["closed", "closing"], "the door.")
+    ]
+    
+    func generateSynonym() -> Question {
+        let item = synonyms.randomElement()!
+        return buildQuestion(text: "Synonym for '\(item.0)'?", correct: item.1, distractors: item.2)
+    }
+    
+    func generateAntonym() -> Question {
+        let item = antonyms.randomElement()!
+        return buildQuestion(text: "Antonym for '\(item.0)'?", correct: item.1, distractors: item.2)
+    }
+    
+    func generateCompleteSentence() -> Question {
+        let item = sentences.randomElement()!
+        return buildQuestion(text: "\(item.0) ___ \(item.3)", correct: item.1, distractors: item.2)
+    }
+    
+    private func buildQuestion(text: String, correct: String, distractors: [String]) -> Question {
+        var options = distractors
+        options.append(correct)
+        options.shuffle()
+        
+        let correctIndex = options.firstIndex(of: correct) ?? 0
+        
+        return Question(text: text, options: options, correctIndex: correctIndex)
+    }
+}
