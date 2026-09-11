@@ -52,3 +52,112 @@ struct LessonView: View {
                     
                     Spacer()
                     
+                    // Speaker Toggle
+                    Button {
+                        speakerManager.toggle()
+                        if speakerManager.isEnabled {
+                            // If turned on, read current content immediately
+                            readCurrentContent()
+                        }
+                    } label: {
+                        Image(systemName: speakerManager.isEnabled ? "speaker.wave.2.fill" : "speaker.slash.fill")
+                            .font(.title2)
+                            .foregroundStyle(speakerManager.isEnabled ? focusColor : .gray)
+                            .padding(8)
+                            .background(speakerManager.isEnabled ? focusColor.opacity(0.1) : Color.clear, in: Circle())
+                    }
+                    .contextMenu {
+                        Button {
+                            speakerManager.selectedGender = .female
+                            speakerManager.speak("Voice changed to Female")
+                        } label: {
+                            Label("Female Voice", systemImage: speakerManager.selectedGender == .female ? "checkmark" : "")
+                        }
+                        
+                        Button {
+                            speakerManager.selectedGender = .male
+                            speakerManager.speak("Voice changed to Male")
+                        } label: {
+                            Label("Male Voice", systemImage: speakerManager.selectedGender == .male ? "checkmark" : "")
+                        }
+                    }
+                }
+                .padding()
+                
+                Spacer()
+                
+                if !isQuizMode {
+                    // Content Page
+                    VStack(spacing: 30) {
+                        Image(systemName: lesson.icon)
+                            .font(.system(size: 80))
+                            .foregroundStyle(focusColor)
+                            .padding()
+                            .background(focusColor.opacity(0.1), in: Circle())
+                        
+                        Text(lesson.content[currentPage])
+                            .font(.system(.title2, design: .rounded, weight: .bold))
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal)
+                            .transition(.scale.combined(with: .opacity))
+                            .id(currentPage) // Force transition
+                    }
+                } else if !showSuccess {
+                    // Quiz Mode
+                    VStack(spacing: 30) {
+                        Text("Quiz Time!")
+                            .font(.headline)
+                            .foregroundStyle(focusColor)
+                        
+                        Text(lesson.quizQuestion)
+                            .font(.system(.title2, design: .rounded, weight: .bold))
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal)
+                        
+                        VStack(spacing: 12) {
+                            ForEach(0..<lesson.quizOptions.count, id: \.self) { index in
+                                Button {
+                                    selectedOption = index
+                                } label: {
+                                    HStack {
+                                        Text(lesson.quizOptions[index])
+                                            .fontWeight(.medium)
+                                        Spacer()
+                                        if selectedOption == index {
+                                            Image(systemName: "checkmark.circle.fill")
+                                        }
+                                    }
+                                    .padding()
+                                    .background(
+                                        RoundedRectangle(cornerRadius: 12)
+                                            .stroke(selectedOption == index ? focusColor : Color.gray.opacity(0.3), lineWidth: 2)
+                                            .background(selectedOption == index ? focusColor.opacity(0.05) : Color(UIColor.systemBackground))
+                                    )
+                                    .foregroundStyle(.primary)
+                                }
+                            }
+                        }
+                        .padding(.horizontal)
+                    }
+                    .transition(.move(edge: .trailing))
+                } else {
+                    // Success View
+                    VStack(spacing: 20) {
+                        Image(systemName: "checkmark.seal.fill")
+                            .font(.system(size: 100))
+                            .foregroundStyle(.yellow)
+                            .shadow(radius: 10)
+                            .rotationEffect(.degrees(isCompleted ? 360 : 0))
+                            .animation(.spring(response: 0.6, dampingFraction: 0.6), value: isCompleted)
+                        
+                        Text("Lesson Complete!")
+                            .font(.largeTitle)
+                            .fontWeight(.heavy)
+                            .foregroundStyle(focusColor)
+                        
+                        Text("+10 XP")
+                            .font(.headline)
+                            .foregroundStyle(.secondary)
+                    }
+                    .onAppear {
+                        isCompleted = true
