@@ -161,3 +161,71 @@ struct LessonView: View {
                     }
                     .onAppear {
                         isCompleted = true
+                    }
+                }
+                
+                Spacer()
+                
+                // Footer
+                VStack {
+                    Button {
+                        handleNext()
+                    } label: {
+                        Text(showSuccess ? "Finish" : (selectedOption != nil && isQuizMode ? "Check" : "Continue"))
+                            .font(.headline)
+                            .fontWeight(.bold)
+                            .foregroundStyle(.white)
+                            .frame(maxWidth: .infinity)
+                            .padding()
+                            .background(
+                                CapsuledButtonBackground(focusColor: focusColor, isEnabled: canProceed())
+                            )
+                    }
+                    .disabled(!canProceed())
+                }
+                .padding()
+            }
+        }
+        .onChange(of: currentPage) { _, _ in
+            readCurrentContent()
+        }
+        .onChange(of: isQuizMode) { _, newValue in
+            if newValue {
+                readCurrentContent()
+            }
+        }
+        .onDisappear {
+            speakerManager.stop()
+        }
+    }
+    
+    // View Helper for Button Background
+    struct CapsuledButtonBackground: View {
+        let focusColor: Color
+        let isEnabled: Bool
+        
+        var body: some View {
+            Capsule()
+                .fill(isEnabled ? focusColor : Color.gray.opacity(0.3))
+                .shadow(color: isEnabled ? focusColor.opacity(0.4) : .clear, radius: 10, y: 5)
+        }
+    }
+    
+    func canProceed() -> Bool {
+        if isQuizMode && !showSuccess {
+            return selectedOption != nil
+        }
+        return true
+    }
+    
+    func handleNext() {
+        if showSuccess {
+            // Finish
+            learningManager.completeLesson(id: lesson.id)
+            dismiss()
+        } else if isQuizMode {
+            // Check Answer
+            if selectedOption == lesson.correctOptionIndex {
+                withAnimation {
+                    showSuccess = true
+                    speakerManager.stop() // Stop reading quiz
