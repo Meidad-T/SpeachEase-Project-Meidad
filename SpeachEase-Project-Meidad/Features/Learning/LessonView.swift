@@ -229,3 +229,44 @@ struct LessonView: View {
                 withAnimation {
                     showSuccess = true
                     speakerManager.stop() // Stop reading quiz
+                }
+            } else {
+                // Wrong answer animation/feedback (simple shaker could go here)
+                // For now just clear selection to retry
+                selectedOption = nil
+            }
+        } else {
+            // Next Page
+            if currentPage < lesson.content.count - 1 {
+                withAnimation {
+                    currentPage += 1
+                }
+            } else {
+                // Enter Quiz Mode
+                withAnimation {
+                    isQuizMode = true
+                }
+            }
+        }
+    }
+    
+    // MARK: - TTS Logic
+    
+    private func readCurrentContent() {
+        guard speakerManager.isEnabled else { return }
+        
+        if isQuizMode {
+            // Read Quiz formatted
+            let text = "Okay, time to test what we learned! \(lesson.quizQuestion) " +
+            lesson.quizOptions.enumerated().map { index, option in
+                "Option \(Character(UnicodeScalar(65 + index)!)): \(option)"
+            }.joined(separator: ". ")
+            
+            speakerManager.speak(text)
+        } else {
+            // Read Slide
+            let text = lesson.content[currentPage]
+            speakerManager.speak(text)
+        }
+    }
+}
