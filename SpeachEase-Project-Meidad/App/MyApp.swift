@@ -36,3 +36,10 @@ struct MyApp: App {
                 NavigationStack {
                     CameraTestView()
                 }
+                .tabItem {
+                    Label("Camera Test", systemImage: "camera.fill")
+                }
+            }
+        }
+    }
+}
